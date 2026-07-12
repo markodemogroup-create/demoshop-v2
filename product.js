@@ -24,6 +24,12 @@ const elements = {
   quoteButton: document.getElementById("quoteButton"),
   quantity: document.getElementById("quantity"),
   cartFeedback: document.getElementById("cartFeedback"),
+  productExtra: document.getElementById("productExtra"),
+  productDescription: document.getElementById("productDescription"),
+  productDescriptionLong: document.getElementById("productDescriptionLong"),
+  productSpecifications: document.getElementById("productSpecifications"),
+  productLogistics: document.getElementById("productLogistics"),
+  productPrintMethods: document.getElementById("productPrintMethods"),
 };
 
 let product;
@@ -72,6 +78,49 @@ function formatStock(value) {
   const stock = Number(value);
   if (!Number.isFinite(stock) || stock <= 0) return "Nema na lageru";
   return `${stock.toLocaleString("sr-RS")} kom. na lageru`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;",
+  })[character]);
+}
+
+function specRows(rows) {
+  return rows.filter(([, value]) => value !== null && value !== undefined && value !== "")
+    .map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("");
+}
+
+function renderProductInformation(detail) {
+  const model = detail?.model || {};
+  elements.productDescription.textContent = model.description || "";
+  elements.productDescriptionLong.textContent = model.descriptionLong || "";
+
+  const specificationRows = [
+    ["Šifra", detail.code], ["Model", model.name], ["Brend", detail.brand?.name],
+    ["Boja", detail.shade?.name || detail.color?.name], ["Veličina", detail.size?.id],
+    ["Pakovanje", detail.packaging?.packageInfo || detail.packaging?.package],
+    ["Neto težina", detail.logistics?.netWeight != null ? `${detail.logistics.netWeight} ${detail.logistics.weightUnit || ""}` : null],
+    ["EAN", detail.ean], ["Stranica kataloga", detail.catalog?.page],
+    ...((detail.specifications || []).map(item => [item.name, item.value])),
+  ];
+  elements.productSpecifications.innerHTML = specRows(specificationRows);
+
+  const dimensions = detail.logistics?.width != null
+    ? `${detail.logistics.depth} × ${detail.logistics.width} × ${detail.logistics.height} ${detail.logistics.dimensionUnit || ""}` : null;
+  elements.productLogistics.innerHTML = specRows([
+    ["Komada po kartonu", detail.packaging?.piecesPerCarton], ["Dimenzije kartona", dimensions],
+    ["Bruto težina kartona", detail.logistics?.grossWeight != null ? `${detail.logistics.grossWeight} ${detail.logistics.weightUnit || ""}` : null],
+    ["Zemlja porekla", detail.logistics?.originName], ["Carinska tarifa", detail.logistics?.customsTariff],
+  ]);
+
+  const printMethods = [...(detail.printMethods || []), ...(detail.printInfo || [])];
+  elements.productPrintMethods.innerHTML = printMethods.length
+    ? printMethods.map(item => `<span>${escapeHtml(item.name || item.value)}</span>`).join("")
+    : "<p>Informacije o štampi dostupne su na upit.</p>";
+
+  const hasInfo = Boolean(model.description || model.descriptionLong || specificationRows.length);
+  elements.productExtra.classList.toggle("hidden", !hasInfo);
 }
 
 function uniqueImages(detail) {
@@ -144,6 +193,7 @@ async function loadVariantDetail(variant) {
     elements.price.textContent = formatPrice(detail.price);
     elements.stock.textContent = formatStock(detail.stock);
     renderGallery(detail);
+    renderProductInformation(detail);
     hideMessage();
   } catch (error) {
     if (requestNumber !== variantRequestNumber) return;
