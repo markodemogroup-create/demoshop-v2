@@ -1,62 +1,61 @@
 const API_BASE = "https://demo-group-api.marko-demogroup.workers.dev";
-const params = new URLSearchParams(window.location.search);
-const requestedModel = params.get("model");
-const requestedShade = params.get("shade");
+const PAGE_LIMIT = 20;
+const DETAIL_CONCURRENCY = 4;
 
-const elements = {
-  message: document.getElementById("productMessage"),
-  detail: document.getElementById("productDetail"),
-  mainImage: document.getElementById("mainImage"),
-  thumbs: document.getElementById("thumbs"),
-  breadcrumb: document.getElementById("breadcrumb"),
-  name: document.getElementById("productName"),
-  model: document.getElementById("modelCode"),
-  price: document.getElementById("price"),
-  colorOptions: document.getElementById("colorOptions"),
-  selectedShadeLabel: document.getElementById("selectedShadeLabel"),
-  sizeBlock: document.getElementById("sizeBlock"),
-  sizeOptions: document.getElementById("sizeOptions"),
-  selectedSizeLabel: document.getElementById("selectedSizeLabel"),
-  variantTableBlock: document.getElementById("variantTableBlock"),
-  variantTableBody: document.getElementById("variantTableBody"),
-  variantCode: document.getElementById("variantCode"),
-  stock: document.getElementById("stock"),
-  quoteButton: document.getElementById("quoteButton"),
+const els = {
+  apiStatus: document.getElementById("apiStatus"),
+  heroTotal: document.getElementById("heroTotal"),
+  totalMatches: document.getElementById("totalMatches"),
+  resultsLabel: document.getElementById("resultsLabel"),
+  pageInfo: document.getElementById("pageInfo"),
+  message: document.getElementById("message"),
+  grid: document.getElementById("productGrid"),
+  searchForm: document.getElementById("searchForm"),
+  searchInput: document.getElementById("searchInput"),
+  clearSearch: document.getElementById("clearSearch"),
+  categoriesToggle: document.getElementById("categoriesToggle"),
+  categoriesMenu: document.getElementById("categoriesMenu"),
+  categoriesGrid: document.getElementById("categoriesGrid"),
+  activeFilter: document.getElementById("activeFilter"),
+  activeFilterName: document.getElementById("activeFilterName"),
+  clearCategory: document.getElementById("clearCategory"),
+  prev: document.getElementById("prevPage"),
+  next: document.getElementById("nextPage"),
+  paginationText: document.getElementById("paginationText"),
 };
 
-let product;
-let selectedColor;
-let selectedVariant;
-let loadedVariantDetail;
-let variantRequestNumber = 0;
-let colorRequestNumber = 0;
-const detailCache = new Map();
+const state = { page: 1, totalPages: 1, search: "", category: "", subCategory: "", requestId: 0 };
 
-async function getVariantDetail(id) {
-  if (!id) return null;
-  if (detailCache.has(id)) return detailCache.get(id);
-  const promise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}`, {
-    headers: { Accept: "application/json" },
-  }).then(async response => {
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data.success ? data.variant : null;
-  }).catch(() => null);
-  detailCache.set(id, promise);
-  return promise;
-}
+const CATEGORY_LABELS = {
+  TX: "Tekstil", UB: "USB memorije", KS: "Kućni program", TP: "Torbe i putovanje",
+  KA: "Kancelarija", TE: "Tehnologija", OL: "Olovke", PT: "Privesci i ID oprema",
+  RK: "Rokovnici i notesi", RL: "Slobodno vreme i lepota", UP: "Upaljači",
+  AO: "Alati i oprema", KI: "Kišobrani",
+};
 
-async function mapWithConcurrency(items, limit, callback) {
-  const results = new Array(items.length);
-  let cursor = 0;
-  async function worker() {
-    while (cursor < items.length) {
-      const index = cursor++;
-      results[index] = await callback(items[index], index);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
+const SUBCATEGORY_LABELS = {
+  "TX - 06":"Radna i sportska odeća","TX - 07":"Pantalone","TX - 12":"Majice, duksevi i jakne",
+  "UB - 02":"USB ambalaža","UB - 04":"USB memorije","UB - 07":"SSD memorije",
+  "KS - 01":"Šolje","KS - 02":"Boce i termosi","KS - 03":"Vinski setovi",
+  "TP - 01":"Poslovne torbe","TP - 02":"Putni program","TP - 03":"Kese i cegeri","TP - 04":"Rančevi","TP - 06":"Sportske torbe",
+  "KA - 02":"Kancelarijski pribor","KA - 03":"Vizitari i novčanici","KA - 05":"Promo pultovi i panoi","KA - 10":"Satovi","KA - 99":"Poklon kutije",
+  "TE - 01":"Gedžeti i punjači","TE - 02":"Pomoćne baterije","TE - 03":"Audio uređaji",
+  "OL - 01":"Plastične olovke","OL - 02":"Metalne olovke","OL - 03":"Drvene olovke","OL - 04":"Setovi olovaka",
+  "PT - 01":"Privesci","PT - 02":"Držači za ID kartice",
+  "RK - 06":"Notesi i rokovnici","RK - 08":"Portfolio i poklon setovi",
+  "RL - 01":"Sport i zabava","RL - 02":"Antistres proizvodi","RL - 03":"Lepota","RL - 04":"Zdravlje i putovanje","RL - 05":"Bočice i zatvarači",
+  "UP - 01":"Brener upaljači","UP - 02":"Kremen upaljači","UP - 03":"Metalni upaljači","UP - 04":"Elektronski upaljači",
+  "AO - 01":"Lampe","AO - 02":"Višenamenski alati","AO - 03":"Ručni i auto alati","AO - 04":"Merni pribor",
+  "KI - 01":"Kišobrani",
+};
+
+function categoryLabel(code) { return CATEGORY_LABELS[code] || code; }
+function subCategoryLabel(code) { return SUBCATEGORY_LABELS[code] || code; }
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
+  })[character]);
 }
 
 function formatPrice(value) {
@@ -66,224 +65,214 @@ function formatPrice(value) {
     : "Cena na upit";
 }
 
-function formatStock(value) {
-  const stock = Number(value);
-  if (!Number.isFinite(stock) || stock <= 0) return "Nema na lageru";
-  return `${stock.toLocaleString("sr-RS")} kom. na lageru`;
+function cardTemplate(product, index) {
+  const model = product.modelCode || "";
+  const href = `product.html?model=${encodeURIComponent(model)}`;
+  const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
+
+  return `
+    <article class="product-card" data-detail-id="${escapeHtml(product.representativeVariantId || "")}" data-index="${index}">
+      <a class="card-image-link" href="${href}" aria-label="Otvori ${escapeHtml(product.name || model)}">
+        <div class="card-media">
+          <div class="image-skeleton"></div>
+          <img class="card-image" alt="" loading="lazy">
+          <span class="card-badge">${product.colorCount > 1 ? `${product.colorCount} boja` : "1 varijanta"}</span>
+        </div>
+      </a>
+      <div class="card-content">
+        <p class="card-category">${escapeHtml(category || "Promotivni proizvodi")}</p>
+        <h2><a href="${href}">${escapeHtml(product.name || "Bez naziva")}</a></h2>
+        <p class="card-code">Model ${escapeHtml(model)}</p>
+        <div class="card-meta">
+          <div><span class="card-price">Učitavanje…</span><small>po komadu</small></div>
+          <a class="card-arrow" href="${href}" aria-label="Detalji proizvoda">→</a>
+        </div>
+        <div class="variant-summary">
+          ${product.sizeCount ? `<span>${product.sizeCount} veličina</span>` : ""}
+          <span>${product.variantCount || 1} varijanti</span>
+        </div>
+      </div>
+    </article>`;
 }
 
-function uniqueImages(detail) {
-  return [...new Set([detail?.image, ...(detail?.images || [])].filter(Boolean))];
+async function fetchVariantDetail(id) {
+  if (!id) return null;
+  const response = await fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) return null;
+  const data = await response.json();
+  return data.success ? data.variant : null;
 }
 
-function showMessage(message) {
-  elements.message.textContent = message;
-  elements.message.classList.remove("hidden");
-}
+function applyCardDetail(card, detail) {
+  const skeleton = card.querySelector(".image-skeleton");
+  const image = card.querySelector(".card-image");
+  const price = card.querySelector(".card-price");
+  skeleton?.remove();
 
-function hideMessage() {
-  elements.message.classList.add("hidden");
-}
-
-function updateUrlShade(colorCode) {
-  if (!colorCode) return;
-  const url = new URL(window.location.href);
-  url.searchParams.set("shade", colorCode);
-  window.history.replaceState(null, "", url);
-}
-
-function renderGallery(detail) {
-  const images = uniqueImages(detail);
-  elements.thumbs.innerHTML = "";
-
-  if (!images.length) {
-    elements.mainImage.removeAttribute("src");
-    elements.mainImage.alt = "Slika trenutno nije dostupna";
-    return;
+  if (detail?.image) {
+    image.src = detail.image;
+    image.alt = detail.name || "Proizvod";
+    image.classList.add("loaded");
+  } else {
+    card.querySelector(".card-media")?.classList.add("no-image");
   }
-
-  elements.mainImage.src = images[0];
-  elements.mainImage.alt = detail?.name || product?.name || "Proizvod";
-  elements.thumbs.innerHTML = images.map((image, index) => `
-    <button class="thumb ${index === 0 ? "active" : ""}" type="button" data-image="${image}" aria-label="Prikaži sliku ${index + 1}">
-      <img src="${image}" alt="" loading="lazy">
-    </button>`).join("");
-
-  elements.thumbs.querySelectorAll(".thumb").forEach(button => {
-    button.addEventListener("click", () => {
-      elements.mainImage.src = button.dataset.image;
-      elements.thumbs.querySelectorAll(".thumb").forEach(item => item.classList.remove("active"));
-      button.classList.add("active");
-    });
-  });
+  price.textContent = formatPrice(detail?.price);
 }
 
-async function loadVariantDetail(variant) {
-  if (!variant?.id) return showMessage("Izabrana varijanta nema ispravan ID.");
-  selectedVariant = variant;
-  const requestNumber = ++variantRequestNumber;
-  elements.variantCode.textContent = variant.code || "—";
-  elements.price.textContent = "Učitavanje cene…";
-  elements.stock.textContent = "Provera lagera…";
-  elements.mainImage.classList.add("loading-image");
+async function enrichCards(requestId) {
+  const cards = [...els.grid.querySelectorAll(".product-card")];
+  let cursor = 0;
 
-  try {
-    const detail = await getVariantDetail(variant.id);
-    if (!detail) throw new Error("Detalji nisu dostupni.");
-    if (requestNumber !== variantRequestNumber) return;
-
-    loadedVariantDetail = detail;
-    elements.variantCode.textContent = detail.code || variant.code || "—";
-    elements.price.textContent = formatPrice(detail.price);
-    elements.stock.textContent = formatStock(detail.stock);
-    renderGallery(detail);
-    hideMessage();
-  } catch (error) {
-    if (requestNumber !== variantRequestNumber) return;
-    elements.price.textContent = "Cena nije dostupna";
-    elements.stock.textContent = "Lager nije dostupan";
-    showMessage("Nije uspelo učitavanje izabrane varijante. Pokušajte ponovo.");
-    console.error(error);
-  } finally {
-    if (requestNumber === variantRequestNumber) elements.mainImage.classList.remove("loading-image");
-  }
-}
-
-async function renderVariantTable(variants) {
-  const requestNumber = ++colorRequestNumber;
-  const hasSizes = variants.some(variant => Boolean(variant.size));
-  elements.variantTableBlock.classList.toggle("hidden", !hasSizes);
-  if (!hasSizes) return;
-
-  elements.variantTableBody.innerHTML = variants.map(variant => `
-    <button class="variant-table-row loading" type="button">
-      <span><strong>${variant.size || "—"}</strong><small>${variant.code || ""}</small></span>
-      <span>Učitavanje…</span><span>—</span>
-    </button>`).join("");
-
-  const details = await mapWithConcurrency(variants, 3, variant => getVariantDetail(variant.id));
-  if (requestNumber !== colorRequestNumber) return;
-
-  elements.variantTableBody.innerHTML = variants.map((variant, index) => {
-    const detail = details[index];
-    const stock = Number(detail?.stock);
-    return `
-      <button class="variant-table-row" type="button" data-index="${index}">
-        <span><strong>${variant.size || "—"}</strong><small>${detail?.code || variant.code || ""}</small></span>
-        <span>${formatPrice(detail?.price)}</span>
-        <span class="${stock > 0 ? "in-stock" : "out-stock"}">${stock > 0 ? stock.toLocaleString("sr-RS") : "—"}</span>
-      </button>`;
-  }).join("");
-
-  elements.variantTableBody.querySelectorAll(".variant-table-row").forEach(button => {
-    button.addEventListener("click", () => selectVariant(variants[Number(button.dataset.index)]));
-  });
-}
-
-function selectVariant(variant) {
-  if (!variant) return;
-  selectedVariant = variant;
-  const variants = selectedColor?.variants || [];
-  elements.sizeOptions.querySelectorAll(".size-button").forEach(button => {
-    button.classList.toggle("active", variants[Number(button.dataset.index)]?.id === variant.id);
-  });
-  elements.selectedSizeLabel.textContent = variant.size ? `Izabrano: ${variant.size}` : "";
-  loadVariantDetail(variant);
-}
-
-function renderSizes(variants = []) {
-  const hasSizes = variants.some(variant => Boolean(variant.size));
-  elements.sizeBlock.classList.toggle("hidden", !hasSizes);
-  elements.sizeOptions.innerHTML = hasSizes
-    ? variants.map((variant, index) => `<button class="size-button" type="button" data-index="${index}">${variant.size || "—"}</button>`).join("")
-    : "";
-
-  elements.sizeOptions.querySelectorAll(".size-button").forEach(button => {
-    button.addEventListener("click", () => selectVariant(variants[Number(button.dataset.index)]));
-  });
-  renderVariantTable(variants);
-  selectVariant(variants[0]);
-}
-
-function selectColor(colorCode, updateUrl = true) {
-  const colors = product?.colors || [];
-  selectedColor = colors.find(color => String(color.colorCode ?? "") === String(colorCode ?? "")) || colors[0];
-  if (!selectedColor) return showMessage("Proizvod nema dostupne varijante.");
-
-  elements.colorOptions.querySelectorAll(".color-button").forEach(button => {
-    button.classList.toggle("active", button.dataset.color === String(selectedColor.colorCode ?? ""));
-  });
-  elements.selectedShadeLabel.textContent = selectedColor.colorCode ? `Šifra boje: ${selectedColor.colorCode}` : "Osnovna varijanta";
-  if (updateUrl) updateUrlShade(selectedColor.colorCode);
-  renderSizes(selectedColor.variants || []);
-}
-
-async function renderColors(colors = []) {
-  elements.colorOptions.innerHTML = colors.map(color => `
-    <button class="color-button color-photo-button loading" type="button" data-color="${color.colorCode ?? ""}" title="Nijansa ${color.colorCode ?? ""}">
-      <span class="color-photo-wrap"><span class="color-photo-skeleton"></span><img alt=""></span>
-      <span class="color-code">${color.colorCode ?? "—"}</span>
-    </button>`).join("");
-  elements.colorOptions.querySelectorAll(".color-button").forEach(button => {
-    button.addEventListener("click", () => selectColor(button.dataset.color));
-  });
-
-  const details = await mapWithConcurrency(colors, 3, color => getVariantDetail(color.representativeVariantId));
-  elements.colorOptions.querySelectorAll(".color-button").forEach((button, index) => {
-    const detail = details[index];
-    button.classList.remove("loading");
-    const image = button.querySelector("img");
-    button.querySelector(".color-photo-skeleton")?.remove();
-    if (detail?.image) {
-      image.src = detail.image;
-      image.alt = detail.name || `Nijansa ${colors[index].colorCode}`;
-    } else {
-      button.querySelector(".color-photo-wrap").classList.add("no-photo");
+  async function worker() {
+    while (cursor < cards.length && requestId === state.requestId) {
+      const card = cards[cursor++];
+      try {
+        const detail = await fetchVariantDetail(card.dataset.detailId);
+        if (requestId === state.requestId) applyCardDetail(card, detail);
+      } catch {
+        if (requestId === state.requestId) applyCardDetail(card, null);
+      }
     }
-  });
+  }
+
+  await Promise.all(Array.from({ length: DETAIL_CONCURRENCY }, worker));
 }
 
-async function loadProduct() {
-  if (!requestedModel) return showMessage("Nedostaje model proizvoda u adresi.");
-  showMessage("Učitavanje proizvoda…");
+function closeCategoriesMenu() {
+  els.categoriesMenu.classList.add("hidden");
+  els.categoriesToggle.setAttribute("aria-expanded", "false");
+}
+
+function applyCategory(category, subCategory = "") {
+  state.category = category;
+  state.subCategory = subCategory;
+  state.page = 1;
+  closeCategoriesMenu();
+  loadProducts();
+  window.scrollTo({ top: 300, behavior: "smooth" });
+}
+
+async function loadCategories() {
+  try {
+    const response = await fetch(`${API_BASE}/catalog-filters`, { headers: { Accept: "application/json" } });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!data.success || !Array.isArray(data.categories)) return;
+
+    els.categoriesGrid.innerHTML = data.categories.map(category => `
+      <section class="menu-category">
+        <button type="button" class="menu-category-title" data-category="${escapeHtml(category.code)}">
+          <span>${escapeHtml(categoryLabel(category.code))}</span><small>${Number(category.count).toLocaleString("sr-RS")}</small>
+        </button>
+        <div class="menu-subcategories">
+          ${category.subCategories.map(sub => `
+            <button type="button" data-category="${escapeHtml(category.code)}" data-subcategory="${escapeHtml(sub.code)}">
+              ${escapeHtml(subCategoryLabel(sub.code))}<small>${sub.count}</small>
+            </button>`).join("")}
+        </div>
+      </section>`).join("");
+  } catch (error) {
+    console.error("Kategorije nisu učitane", error);
+  }
+}
+
+async function loadProducts() {
+  const requestId = ++state.requestId;
+  els.message.classList.remove("hidden");
+  els.message.textContent = "Učitavanje proizvoda…";
+  els.grid.innerHTML = "";
+
+  const params = new URLSearchParams({ page: String(state.page), limit: String(PAGE_LIMIT) });
+  if (state.search) params.set("search", state.search);
+  if (state.category) params.set("category", state.category);
+  if (state.subCategory) params.set("subCategory", state.subCategory);
 
   try {
-    const response = await fetch(`${API_BASE}/product-grouped?model=${encodeURIComponent(requestedModel)}`, {
+    const response = await fetch(`${API_BASE}/products-grouped?${params}`, {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    if (!data.success || !data.product) throw new Error(data.error || "Proizvod nije pronađen.");
+    if (!data.success) throw new Error(data.error || "Katalog trenutno nije dostupan.");
+    if (requestId !== state.requestId) return;
 
-    product = data.product;
-    document.title = `${product.name || product.modelCode} — DemoShop`;
-    elements.breadcrumb.textContent = [product.category, product.subCategory].filter(Boolean).join(" / ");
-    elements.name.textContent = product.name || "Bez naziva";
-    elements.model.textContent = product.modelCode || requestedModel;
-    renderColors(product.colors || []);
-    elements.detail.classList.remove("hidden");
-    hideMessage();
+    state.page = data.page || 1;
+    state.totalPages = data.totalPages || 1;
+    const total = Number(data.totalGroupedCards || 0);
+    const matches = Number(data.totalMatchingProducts || 0);
 
-    const initialColor = product.colors?.find(color => String(color.colorCode ?? "") === String(requestedShade ?? "")) || product.colors?.[0];
-    if (initialColor) selectColor(initialColor.colorCode, false);
+    els.apiStatus.textContent = "Katalog ažuriran";
+    els.heroTotal.textContent = total.toLocaleString("sr-RS");
+    els.totalMatches.textContent = matches.toLocaleString("sr-RS");
+    const filterName = state.subCategory ? subCategoryLabel(state.subCategory) : categoryLabel(state.category);
+    els.resultsLabel.textContent = state.search ? `rezultata za „${state.search}”` : "proizvoda";
+    els.activeFilter.classList.toggle("hidden", !state.category);
+    els.activeFilterName.textContent = filterName || "";
+    els.pageInfo.textContent = `Strana ${state.page} od ${state.totalPages}`;
+    els.paginationText.textContent = `${state.page} / ${state.totalPages}`;
+    els.prev.disabled = !data.hasPreviousPage;
+    els.next.disabled = !data.hasNextPage;
+    els.clearSearch.classList.toggle("hidden", !state.search);
+
+    const products = Array.isArray(data.products) ? data.products : [];
+    if (!products.length) {
+      els.message.textContent = "Nema proizvoda koji odgovaraju pretrazi.";
+      return;
+    }
+
+    els.message.classList.add("hidden");
+    els.grid.innerHTML = products.map(cardTemplate).join("");
+    enrichCards(requestId);
   } catch (error) {
-    showMessage("Proizvod trenutno nije moguće učitati. Pokušajte ponovo.");
+    if (requestId !== state.requestId) return;
+    els.apiStatus.textContent = "Veza nije dostupna";
+    els.message.textContent = "Katalog trenutno nije moguće učitati. Pokušajte ponovo za nekoliko trenutaka.";
     console.error(error);
   }
 }
 
-elements.quoteButton.addEventListener("click", () => {
-  const subject = encodeURIComponent(`Upit za ${product?.modelCode || requestedModel}`);
-  const body = encodeURIComponent([
-    "Poštovani,", "", "Zanima me ponuda za sledeći proizvod:",
-    `Naziv: ${product?.name || "—"}`,
-    `Model: ${product?.modelCode || requestedModel || "—"}`,
-    `Varijanta: ${loadedVariantDetail?.code || selectedVariant?.code || "—"}`,
-    `Boja: ${selectedColor?.colorCode || "—"}`,
-    `Veličina: ${selectedVariant?.size || "—"}`,
-    `Cena: ${elements.price.textContent}`, "", "Molim vas za ponudu.",
-  ].join("\n"));
-  window.location.href = `mailto:info@demogroup.rs?subject=${subject}&body=${body}`;
+els.searchForm?.addEventListener("submit", event => {
+  event.preventDefault();
+  state.search = els.searchInput.value.trim();
+  state.page = 1;
+  loadProducts();
 });
 
-loadProduct();
+els.clearSearch?.addEventListener("click", () => {
+  state.search = "";
+  state.page = 1;
+  els.searchInput.value = "";
+  loadProducts();
+});
+
+els.categoriesToggle?.addEventListener("click", () => {
+  const willOpen = els.categoriesMenu.classList.contains("hidden");
+  els.categoriesMenu.classList.toggle("hidden", !willOpen);
+  els.categoriesToggle.setAttribute("aria-expanded", String(willOpen));
+});
+
+document.querySelectorAll(".quick-category").forEach(button => {
+  button.addEventListener("click", () => applyCategory(button.dataset.category));
+});
+
+els.categoriesGrid?.addEventListener("click", event => {
+  const button = event.target.closest("button[data-category]");
+  if (button) applyCategory(button.dataset.category, button.dataset.subcategory || "");
+});
+
+els.clearCategory?.addEventListener("click", () => applyCategory("", ""));
+
+document.addEventListener("keydown", event => { if (event.key === "Escape") closeCategoriesMenu(); });
+
+els.prev?.addEventListener("click", () => {
+  if (state.page > 1) { state.page -= 1; loadProducts(); window.scrollTo({ top: 260, behavior: "smooth" }); }
+});
+
+els.next?.addEventListener("click", () => {
+  if (state.page < state.totalPages) { state.page += 1; loadProducts(); window.scrollTo({ top: 260, behavior: "smooth" }); }
+});
+
+loadCategories();
+loadProducts();
