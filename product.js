@@ -22,6 +22,8 @@ const elements = {
   variantCode: document.getElementById("variantCode"),
   stock: document.getElementById("stock"),
   quoteButton: document.getElementById("quoteButton"),
+  quantity: document.getElementById("quantity"),
+  cartFeedback: document.getElementById("cartFeedback"),
 };
 
 let product;
@@ -287,17 +289,23 @@ async function loadProduct() {
 }
 
 elements.quoteButton.addEventListener("click", () => {
-  const subject = encodeURIComponent(`Upit za ${product?.modelCode || requestedModel}`);
-  const body = encodeURIComponent([
-    "Poštovani,", "", "Zanima me ponuda za sledeći proizvod:",
-    `Naziv: ${product?.name || "—"}`,
-    `Model: ${product?.modelCode || requestedModel || "—"}`,
-    `Varijanta: ${loadedVariantDetail?.code || selectedVariant?.code || "—"}`,
-    `Boja: ${selectedColor?.colorCode || "—"}`,
-    `Veličina: ${selectedVariant?.size || "—"}`,
-    `Cena: ${elements.price.textContent}`, "", "Molim vas za ponudu.",
-  ].join("\n"));
-  window.location.href = `mailto:info@demogroup.rs?subject=${subject}&body=${body}`;
+  if (!selectedVariant || !loadedVariantDetail) {
+    elements.cartFeedback.textContent = "Sačekajte da se izabrana varijanta učita.";
+    return;
+  }
+  const quantity = Math.max(1, Number.parseInt(elements.quantity.value || "1", 10));
+  window.DemoCart.add({
+    id: String(selectedVariant.id),
+    modelCode: product?.modelCode || requestedModel || "",
+    name: product?.name || loadedVariantDetail.name || "Proizvod",
+    code: loadedVariantDetail.code || selectedVariant.code || "",
+    colorCode: selectedColor?.colorCode || "",
+    size: selectedVariant.size || "",
+    price: Number.isFinite(Number(loadedVariantDetail.price)) ? Number(loadedVariantDetail.price) : null,
+    image: loadedVariantDetail.image || fallbackImageForId(selectedVariant.id),
+    quantity,
+  });
+  elements.cartFeedback.innerHTML = `Dodato u upit: <strong>${quantity} kom.</strong> <a href="cart.html">Otvori upit →</a>`;
 });
 
 loadProduct();
