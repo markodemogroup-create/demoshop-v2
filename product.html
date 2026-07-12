@@ -6,13 +6,13 @@
   <meta name="description" content="Detalji proizvoda, dostupne boje, veličine, cena i lager.">
   <title>Proizvod — DemoShop</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="index.html"><span class="brand-mark">D</span><span>Demo<span>Shop</span></span></a>
-      <a class="back-link" href="index.html">← Nazad na katalog</a>
+      <div class="header-actions"><a class="back-link" href="index.html">← Nazad na katalog</a><a class="cart-link" href="cart.html">Upit <span class="cart-count" data-cart-count>0</span></a></div>
     </div>
   </header>
 
@@ -51,11 +51,15 @@
           <div><span>Dostupnost</span><strong id="stock">—</strong></div>
         </div>
 
-        <button id="quoteButton" class="quote-button" type="button">Zatraži ponudu</button>
-        <p class="helper">Izaberite boju i veličinu kako bismo pripremili upit za tačnu varijantu.</p>
+        <div class="add-to-cart-row">
+          <label for="quantity">Količina<input id="quantity" type="number" min="1" value="1" inputmode="numeric"></label>
+          <button id="quoteButton" class="quote-button" type="button">Dodaj u upit</button>
+        </div>
+        <p id="cartFeedback" class="helper">Izaberite boju i veličinu, zatim dodajte tačnu varijantu u upit.</p>
       </section>
     </article>
   </main>
-  <script src="product.js?v=6"></script>
+  <script src="cart-store.js?v=7"></script>
+  <script src="product.js?v=7"></script>
 </body>
 </html>
