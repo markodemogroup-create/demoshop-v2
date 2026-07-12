@@ -116,7 +116,16 @@ function applyCardDetail(card, detail) {
     image.alt = detail.name || "Proizvod";
     image.classList.add("loaded");
   } else {
-    card.querySelector(".card-media")?.classList.add("no-image");
+    const rawId = card.dataset.detailId || "";
+    const baseImageId = rawId.split("-")[0].replace(/[^a-zA-Z0-9]/g, "");
+    if (baseImageId) {
+      image.src = `https://apiv2.promosolution.services/content/ModelItem/${baseImageId}_001.webp`;
+      image.alt = "Proizvod";
+      image.onload = () => image.classList.add("loaded");
+      image.onerror = () => card.querySelector(".card-media")?.classList.add("no-image");
+    } else {
+      card.querySelector(".card-media")?.classList.add("no-image");
+    }
   }
   price.textContent = formatPrice(detail?.price);
 }
