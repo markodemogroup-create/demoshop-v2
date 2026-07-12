@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DemoShop v2 — Katalog</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html">DemoShop <span>v2</span></a>
+  <div class="status" id="apiStatus">Povezivanje sa katalogom…</div>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <p class="eyebrow">DEMO GROUP KATALOG</p>
+    <h1>Jedan model. Sve boje i veličine.</h1>
+    <p>Funkcionalna test verzija povezana sa PromoSolution podacima preko Demo Group API-ja.</p>
+  </section>
+
+  <section class="toolbar">
+    <form id="searchForm" class="search">
+      <input id="searchInput" type="search" placeholder="Pretraži naziv ili šifru, npr. RIVER ili 57.031">
+      <button type="submit">Pretraži</button>
+    </form>
+    <button id="clearSearch" class="secondary hidden" type="button">Poništi pretragu</button>
+  </section>
+
+  <section class="stats">
+    <div><strong id="totalCards">—</strong><span>grupisanih kartica</span></div>
+    <div><strong id="totalMatches">—</strong><span>rezultata</span></div>
+    <div><strong id="pageInfo">—</strong><span>strana</span></div>
+  </section>
+
+  <div id="message" class="message">Učitavanje proizvoda…</div>
+  <section id="productGrid" class="grid" aria-live="polite"></section>
+
+  <nav class="pagination" aria-label="Straničenje">
+    <button id="prevPage" type="button">← Prethodna</button>
+    <span id="paginationText">—</span>
+    <button id="nextPage" type="button">Sledeća →</button>
+  </nav>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>

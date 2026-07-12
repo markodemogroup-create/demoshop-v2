@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Proizvod — DemoShop v2</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html">DemoShop <span>v2</span></a>
+  <a class="back-link" href="index.html">← Nazad na katalog</a>
+</header>
+
+<main class="container">
+  <div id="productMessage" class="message">Učitavanje proizvoda…</div>
+
+  <article id="productDetail" class="product-detail hidden">
+    <section class="gallery-panel">
+      <div class="main-image-wrap">
+        <img id="mainImage" alt="">
+      </div>
+      <div id="thumbs" class="thumbs"></div>
+    </section>
+
+    <section class="product-info">
+      <p id="breadcrumb" class="eyebrow"></p>
+      <h1 id="productName"></h1>
+      <p class="model-line">Model: <strong id="modelCode"></strong></p>
+
+      <div class="price-row">
+        <span id="price">—</span>
+        <small>bez PDV-a, ako API cenu vraća u tom formatu</small>
+      </div>
+
+      <div class="option-block">
+        <div class="option-heading">
+          <strong>Boja / nijansa</strong>
+          <span id="selectedShadeLabel"></span>
+        </div>
+        <div id="colorOptions" class="color-options"></div>
+      </div>
+
+      <div id="sizeBlock" class="option-block">
+        <div class="option-heading">
+          <strong>Veličina</strong>
+          <span id="selectedSizeLabel"></span>
+        </div>
+        <div id="sizeOptions" class="size-options"></div>
+      </div>
+
+      <div class="variant-card">
+        <div><span>Šifra artikla</span><strong id="variantCode">—</strong></div>
+        <div><span>Lager</span><strong id="stock">—</strong></div>
+      </div>
+
+      <button id="quoteButton" class="quote-button" type="button">Zatraži ponudu</button>
+      <p class="helper">U sledećoj fazi ovo dugme povezujemo sa korpom/upitom i slanjem porudžbine na email.</p>
+    </section>
+  </article>
+</main>
+
+<script src="product.js"></script>
+</body>
+</html>
