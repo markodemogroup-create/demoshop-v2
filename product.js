@@ -76,6 +76,11 @@ function uniqueImages(detail) {
   return [...new Set([detail?.image, ...(detail?.images || [])].filter(Boolean))];
 }
 
+function fallbackImageForId(id) {
+  const baseId = String(id || "").split("-")[0].replace(/[^a-zA-Z0-9]/g, "");
+  return baseId ? `https://apiv2.promosolution.services/content/ModelItem/${baseId}_001.webp` : "";
+}
+
 function showMessage(message) {
   elements.message.textContent = message;
   elements.message.classList.remove("hidden");
@@ -142,6 +147,8 @@ async function loadVariantDetail(variant) {
     if (requestNumber !== variantRequestNumber) return;
     elements.price.textContent = "Cena nije dostupna";
     elements.stock.textContent = "Lager nije dostupan";
+    const fallbackImage = fallbackImageForId(variant.id);
+    if (fallbackImage) renderGallery({ image: fallbackImage, name: variant.name || product?.name });
     showMessage("Nije uspelo učitavanje izabrane varijante. Pokušajte ponovo.");
     console.error(error);
   } finally {
@@ -238,7 +245,14 @@ async function renderColors(colors = []) {
       image.src = detail.image;
       image.alt = detail.name || `Nijansa ${colors[index].colorCode}`;
     } else {
-      button.querySelector(".color-photo-wrap").classList.add("no-photo");
+      const fallbackImage = fallbackImageForId(colors[index].representativeVariantId);
+      if (fallbackImage) {
+        image.src = fallbackImage;
+        image.alt = `Nijansa ${colors[index].colorCode}`;
+        image.onerror = () => button.querySelector(".color-photo-wrap").classList.add("no-photo");
+      } else {
+        button.querySelector(".color-photo-wrap").classList.add("no-photo");
+      }
     }
   });
 }
