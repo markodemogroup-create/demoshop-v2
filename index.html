@@ -20,6 +20,20 @@
     </div>
   </header>
 
+  <nav class="catalog-nav" aria-label="Glavna navigacija kataloga">
+    <div class="container nav-inner">
+      <button id="categoriesToggle" class="categories-toggle" type="button" aria-expanded="false">Kategorije <span>⌄</span></button>
+      <button class="quick-category" type="button" data-category="TX">Tekstil</button>
+      <button class="quick-category" type="button" data-category="KS">Kućni program</button>
+      <button class="quick-category" type="button" data-category="TE">Tehnologija</button>
+      <button class="quick-category" type="button" data-category="TP">Torbe i putovanje</button>
+      <button class="quick-category" type="button" data-category="OL">Olovke</button>
+    </div>
+    <div id="categoriesMenu" class="categories-menu hidden">
+      <div class="container"><div id="categoriesGrid" class="categories-grid"></div></div>
+    </div>
+  </nav>
+
   <main>
     <section class="catalog-hero">
       <div class="container hero-inner">
@@ -45,6 +59,11 @@
       <div class="results-bar">
         <div><strong id="totalMatches">—</strong> <span id="resultsLabel">proizvoda</span></div>
         <div id="pageInfo">Strana —</div>
+      </div>
+
+      <div id="activeFilter" class="active-filter hidden">
+        <div><span>Aktivna kategorija</span><strong id="activeFilterName"></strong></div>
+        <button id="clearCategory" type="button">Prikaži sve ×</button>
       </div>
 
       <div id="message" class="message" role="status">Učitavanje proizvoda…</div>
