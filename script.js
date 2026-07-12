@@ -34,7 +34,19 @@ async function loadProducts() {
   if (state.search) params.set("search", state.search);
 
   try {
-    const response = await fetch(`${API_BASE}/products-grouped?${params}`);
+  const apiUrl =
+  `${API_BASE}/products-grouped?${params}`;
+
+console.log("Pozivam API:", apiUrl);
+
+const response = await fetch(apiUrl, {
+  method: "GET",
+  mode: "cors",
+  cache: "no-store",
+  headers: {
+    Accept: "application/json",
+  },
+});
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (!data.success) throw new Error(data.error || "API nije vratio uspešan odgovor.");
