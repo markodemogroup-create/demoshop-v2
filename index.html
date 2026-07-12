@@ -1,48 +1,64 @@
 <!doctype html>
-<html lang="sr">
+<html lang="sr-Latn">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>DemoShop v2 — Katalog</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="description" content="DemoShop katalog promotivnih proizvoda sa bojama, veličinama, cenama i lagerom.">
+  <title>DemoShop — Katalog promotivnih proizvoda</title>
+  <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="index.html">DemoShop <span>v2</span></a>
-  <div class="status" id="apiStatus">Povezivanje sa katalogom…</div>
-</header>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html" aria-label="DemoShop početna">
+        <span class="brand-mark">D</span>
+        <span>Demo<span>Shop</span></span>
+      </a>
+      <div class="header-note"><span class="status-dot"></span><span id="apiStatus">Povezivanje sa katalogom</span></div>
+      <a class="header-cta" href="mailto:info@demogroup.rs">Zatraži ponudu</a>
+    </div>
+  </header>
 
-<main class="container">
-  <section class="hero">
-    <p class="eyebrow">DEMO GROUP KATALOG</p>
-    <h1>Jedan model. Sve boje i veličine.</h1>
-    <p>Funkcionalna test verzija povezana sa PromoSolution podacima preko Demo Group API-ja.</p>
-  </section>
+  <main>
+    <section class="catalog-hero">
+      <div class="container hero-inner">
+        <div>
+          <p class="eyebrow">DEMO GROUP · PROMOTIVNI PROIZVODI</p>
+          <h1>Pronađite proizvod za vaš brend.</h1>
+          <p class="hero-copy">Jedan model, sve dostupne boje i veličine. Cena i lager proveravaju se direktno za izabranu varijantu.</p>
+        </div>
+        <div class="hero-badge"><strong id="heroTotal">1.756</strong><span>grupisanih modela</span></div>
+      </div>
+    </section>
 
-  <section class="toolbar">
-    <form id="searchForm" class="search">
-      <input id="searchInput" type="search" placeholder="Pretraži naziv ili šifru, npr. RIVER ili 57.031">
-      <button type="submit">Pretraži</button>
-    </form>
-    <button id="clearSearch" class="secondary hidden" type="button">Poništi pretragu</button>
-  </section>
+    <section class="container catalog-shell">
+      <form id="searchForm" class="search-panel" role="search">
+        <label for="searchInput">Pretraga kataloga</label>
+        <div class="search-row">
+          <input id="searchInput" type="search" placeholder="Naziv ili šifra, npr. RIVER ili 57.031" autocomplete="off">
+          <button type="submit">Pretraži</button>
+          <button id="clearSearch" class="button-ghost hidden" type="button">Poništi</button>
+        </div>
+      </form>
 
-  <section class="stats">
-    <div><strong id="totalCards">—</strong><span>grupisanih kartica</span></div>
-    <div><strong id="totalMatches">—</strong><span>rezultata</span></div>
-    <div><strong id="pageInfo">—</strong><span>strana</span></div>
-  </section>
+      <div class="results-bar">
+        <div><strong id="totalMatches">—</strong> <span id="resultsLabel">proizvoda</span></div>
+        <div id="pageInfo">Strana —</div>
+      </div>
 
-  <div id="message" class="message">Učitavanje proizvoda…</div>
-  <section id="productGrid" class="grid" aria-live="polite"></section>
+      <div id="message" class="message" role="status">Učitavanje proizvoda…</div>
+      <section id="productGrid" class="product-grid" aria-live="polite"></section>
 
-  <nav class="pagination" aria-label="Straničenje">
-    <button id="prevPage" type="button">← Prethodna</button>
-    <span id="paginationText">—</span>
-    <button id="nextPage" type="button">Sledeća →</button>
-  </nav>
-</main>
+      <nav class="pagination" aria-label="Straničenje kataloga">
+        <button id="prevPage" type="button">← Prethodna</button>
+        <span id="paginationText">—</span>
+        <button id="nextPage" type="button">Sledeća →</button>
+      </nav>
+    </section>
+  </main>
 
-<script src="script.js"></script>
+  <footer class="site-footer"><div class="container">DemoShop · Demo Group katalog · Podaci se automatski osvežavaju</div></footer>
+  <script src="script.js?v=4"></script>
 </body>
 </html>
