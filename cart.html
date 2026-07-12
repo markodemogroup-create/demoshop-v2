@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Pošaljite upit za odabrane DemoShop proizvode.">
+  <title>Upit — DemoShop</title>
+  <link rel="stylesheet" href="style.css?v=7">
+</head>
+<body>
+  <header class="site-header"><div class="header-inner">
+    <a class="brand" href="index.html"><span class="brand-mark">D</span><span>Demo<span>Shop</span></span></a>
+    <a class="back-link" href="index.html">← Nastavi pregled kataloga</a>
+  </div></header>
+
+  <main class="container cart-page">
+    <div class="cart-title"><p class="eyebrow">UPIT ZA PONUDU</p><h1>Vaš izbor proizvoda</h1><p>Cene su informativne i prikazane bez PDV-a.</p></div>
+    <div class="cart-layout">
+      <section>
+        <div id="emptyCart" class="message hidden">Upit je prazan. <a href="index.html">Pronađite proizvode</a>.</div>
+        <div id="cartItems" class="cart-items"></div>
+      </section>
+      <aside id="cartSummary" class="cart-summary">
+        <h2>Podaci za upit</h2>
+        <label>Ime i prezime<input id="customerName" type="text" required></label>
+        <label>Firma<input id="customerCompany" type="text"></label>
+        <label>Email<input id="customerEmail" type="email" required></label>
+        <label>Telefon<input id="customerPhone" type="tel"></label>
+        <label>Napomena<textarea id="customerNote" rows="4" placeholder="Štampa, rok, posebni zahtevi…"></textarea></label>
+        <div class="summary-total"><span>Procena bez PDV-a</span><strong id="cartTotal">0,00 €</strong></div>
+        <button id="sendQuote" class="quote-button" type="button">Pripremi email upit</button>
+        <p id="formMessage" class="helper">Otvoriće se vaša email aplikacija sa pripremljenim upitom.</p>
+      </aside>
+    </div>
+  </main>
+  <script src="cart-store.js?v=7"></script>
+  <script src="cart.js?v=7"></script>
+</body>
+</html>
