@@ -17,6 +17,8 @@ const elements = {
   sizeBlock: document.getElementById("sizeBlock"),
   sizeOptions: document.getElementById("sizeOptions"),
   selectedSizeLabel: document.getElementById("selectedSizeLabel"),
+  variantTableBlock: document.getElementById("variantTableBlock"),
+  variantTableBody: document.getElementById("variantTableBody"),
   variantCode: document.getElementById("variantCode"),
   stock: document.getElementById("stock"),
   quoteButton: document.getElementById("quoteButton"),
@@ -27,6 +29,35 @@ let selectedColor;
 let selectedVariant;
 let loadedVariantDetail;
 let variantRequestNumber = 0;
+let colorRequestNumber = 0;
+const detailCache = new Map();
+
+async function getVariantDetail(id) {
+  if (!id) return null;
+  if (detailCache.has(id)) return detailCache.get(id);
+  const promise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}`, {
+    headers: { Accept: "application/json" },
+  }).then(async response => {
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.success ? data.variant : null;
+  }).catch(() => null);
+  detailCache.set(id, promise);
+  return promise;
+}
+
+async function mapWithConcurrency(items, limit, callback) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  async function worker() {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await callback(items[index], index);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
 
 function formatPrice(value) {
   const price = Number(value);
@@ -97,19 +128,15 @@ async function loadVariantDetail(variant) {
   elements.mainImage.classList.add("loading-image");
 
   try {
-    const response = await fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(variant.id)}`, {
-      headers: { Accept: "application/json" },
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    if (!data.success || !data.variant) throw new Error(data.error || "Detalji nisu dostupni.");
+    const detail = await getVariantDetail(variant.id);
+    if (!detail) throw new Error("Detalji nisu dostupni.");
     if (requestNumber !== variantRequestNumber) return;
 
-    loadedVariantDetail = data.variant;
-    elements.variantCode.textContent = data.variant.code || variant.code || "—";
-    elements.price.textContent = formatPrice(data.variant.price);
-    elements.stock.textContent = formatStock(data.variant.stock);
-    renderGallery(data.variant);
+    loadedVariantDetail = detail;
+    elements.variantCode.textContent = detail.code || variant.code || "—";
+    elements.price.textContent = formatPrice(detail.price);
+    elements.stock.textContent = formatStock(detail.stock);
+    renderGallery(detail);
     hideMessage();
   } catch (error) {
     if (requestNumber !== variantRequestNumber) return;
@@ -120,6 +147,37 @@ async function loadVariantDetail(variant) {
   } finally {
     if (requestNumber === variantRequestNumber) elements.mainImage.classList.remove("loading-image");
   }
+}
+
+async function renderVariantTable(variants) {
+  const requestNumber = ++colorRequestNumber;
+  const hasSizes = variants.some(variant => Boolean(variant.size));
+  elements.variantTableBlock.classList.toggle("hidden", !hasSizes);
+  if (!hasSizes) return;
+
+  elements.variantTableBody.innerHTML = variants.map(variant => `
+    <button class="variant-table-row loading" type="button">
+      <span><strong>${variant.size || "—"}</strong><small>${variant.code || ""}</small></span>
+      <span>Učitavanje…</span><span>—</span>
+    </button>`).join("");
+
+  const details = await mapWithConcurrency(variants, 3, variant => getVariantDetail(variant.id));
+  if (requestNumber !== colorRequestNumber) return;
+
+  elements.variantTableBody.innerHTML = variants.map((variant, index) => {
+    const detail = details[index];
+    const stock = Number(detail?.stock);
+    return `
+      <button class="variant-table-row" type="button" data-index="${index}">
+        <span><strong>${variant.size || "—"}</strong><small>${detail?.code || variant.code || ""}</small></span>
+        <span>${formatPrice(detail?.price)}</span>
+        <span class="${stock > 0 ? "in-stock" : "out-stock"}">${stock > 0 ? stock.toLocaleString("sr-RS") : "—"}</span>
+      </button>`;
+  }).join("");
+
+  elements.variantTableBody.querySelectorAll(".variant-table-row").forEach(button => {
+    button.addEventListener("click", () => selectVariant(variants[Number(button.dataset.index)]));
+  });
 }
 
 function selectVariant(variant) {
@@ -143,6 +201,7 @@ function renderSizes(variants = []) {
   elements.sizeOptions.querySelectorAll(".size-button").forEach(button => {
     button.addEventListener("click", () => selectVariant(variants[Number(button.dataset.index)]));
   });
+  renderVariantTable(variants);
   selectVariant(variants[0]);
 }
 
@@ -159,13 +218,28 @@ function selectColor(colorCode, updateUrl = true) {
   renderSizes(selectedColor.variants || []);
 }
 
-function renderColors(colors = []) {
+async function renderColors(colors = []) {
   elements.colorOptions.innerHTML = colors.map(color => `
-    <button class="color-button" type="button" data-color="${color.colorCode ?? ""}" title="Boja ${color.colorCode ?? ""}">
-      ${color.colorCode ?? "—"}
+    <button class="color-button color-photo-button loading" type="button" data-color="${color.colorCode ?? ""}" title="Nijansa ${color.colorCode ?? ""}">
+      <span class="color-photo-wrap"><span class="color-photo-skeleton"></span><img alt=""></span>
+      <span class="color-code">${color.colorCode ?? "—"}</span>
     </button>`).join("");
   elements.colorOptions.querySelectorAll(".color-button").forEach(button => {
     button.addEventListener("click", () => selectColor(button.dataset.color));
+  });
+
+  const details = await mapWithConcurrency(colors, 3, color => getVariantDetail(color.representativeVariantId));
+  elements.colorOptions.querySelectorAll(".color-button").forEach((button, index) => {
+    const detail = details[index];
+    button.classList.remove("loading");
+    const image = button.querySelector("img");
+    button.querySelector(".color-photo-skeleton")?.remove();
+    if (detail?.image) {
+      image.src = detail.image;
+      image.alt = detail.name || `Nijansa ${colors[index].colorCode}`;
+    } else {
+      button.querySelector(".color-photo-wrap").classList.add("no-photo");
+    }
   });
 }
 
