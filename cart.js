@@ -1,4 +1,4 @@
-const QUOTE_EMAIL = "marko.demogroup@gmail.com";
+const API_BASE = "https://demo-group-api.marko-demogroup.workers.dev";
 const itemsElement = document.getElementById("cartItems");
 const emptyElement = document.getElementById("emptyCart");
 const summaryElement = document.getElementById("cartSummary");
@@ -53,7 +53,8 @@ itemsElement.addEventListener("click", event => {
   render();
 });
 
-document.getElementById("sendQuote").addEventListener("click", () => {
+document.getElementById("sendQuote").addEventListener("click", async () => {
+  const sendButton = document.getElementById("sendQuote");
   const name = document.getElementById("customerName").value.trim();
   const email = document.getElementById("customerEmail").value.trim();
   if (!name || !email) {
@@ -63,25 +64,41 @@ document.getElementById("sendQuote").addEventListener("click", () => {
   }
 
   const items = window.DemoCart.read();
-  const lines = [
-    "Poštovani,", "", "Molim vas za ponudu za sledeće proizvode:", "",
-    ...items.flatMap((item, index) => [
-      `${index + 1}. ${item.name}`,
-      `   Model: ${item.modelCode} | Šifra: ${item.code}`,
-      `   Boja: ${item.colorCode || "—"} | Veličina: ${item.size || "—"}`,
-      `   Količina: ${item.quantity} kom. | Cena/kom: ${item.price === null ? "na upit" : money(item.price)}`,
-      "",
-    ]),
-    `Ime: ${name}`,
-    `Firma: ${document.getElementById("customerCompany").value.trim() || "—"}`,
-    `Email: ${email}`,
-    `Telefon: ${document.getElementById("customerPhone").value.trim() || "—"}`,
-    `Napomena: ${document.getElementById("customerNote").value.trim() || "—"}`,
-    "", "Sve prikazane cene su bez PDV-a.",
-  ];
-  const subject = encodeURIComponent(`DemoShop upit — ${name}`);
-  const body = encodeURIComponent(lines.join("\n"));
-  window.location.href = `mailto:${QUOTE_EMAIL}?subject=${subject}&body=${body}`;
+  sendButton.disabled = true;
+  sendButton.textContent = "Slanje…";
+  formMessage.classList.remove("form-error", "form-success");
+  formMessage.textContent = "Šaljemo upit…";
+
+  try {
+    const response = await fetch(`${API_BASE}/send-quote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        website: document.getElementById("website").value,
+        customer: {
+          name,
+          company: document.getElementById("customerCompany").value.trim(),
+          email,
+          phone: document.getElementById("customerPhone").value.trim(),
+          note: document.getElementById("customerNote").value.trim(),
+        },
+        items,
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) throw new Error(data.error || "Upit nije poslat.");
+
+    window.DemoCart.write([]);
+    render();
+    formMessage.textContent = "Upit je uspešno poslat na Demo Group email.";
+    formMessage.classList.add("form-success");
+    sendButton.textContent = "Upit je poslat ✓";
+  } catch (error) {
+    formMessage.textContent = `Slanje nije uspelo: ${error.message}`;
+    formMessage.classList.add("form-error");
+    sendButton.disabled = false;
+    sendButton.textContent = "Pokušaj ponovo";
+  }
 });
 
 render();
