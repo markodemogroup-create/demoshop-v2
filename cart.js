@@ -3,6 +3,7 @@ const itemsElement = document.getElementById("cartItems");
 const emptyElement = document.getElementById("emptyCart");
 const summaryElement = document.getElementById("cartSummary");
 const totalElement = document.getElementById("cartTotal");
+const totalLabelElement = document.getElementById("cartTotalLabel");
 const formMessage = document.getElementById("formMessage");
 
 function escapeHtml(value) {
@@ -17,9 +18,16 @@ function money(value) {
 
 function render() {
   const items = window.DemoCart.read();
+  const displayItems = items.map(item => {
+    const price = Number(item.price);
+    return {
+      ...item,
+      price: Number.isFinite(price) && price > 0 ? price : null,
+    };
+  });
   emptyElement.classList.toggle("hidden", items.length > 0);
   summaryElement.classList.toggle("hidden", items.length === 0);
-  itemsElement.innerHTML = items.map((item, index) => `
+  itemsElement.innerHTML = displayItems.map((item, index) => `
     <article class="cart-item">
       <div class="cart-item-image">${item.image ? `<img src="${escapeHtml(item.image)}" alt="">` : ""}</div>
       <div class="cart-item-info">
@@ -27,12 +35,27 @@ function render() {
         <span>${escapeHtml(item.code)}${item.colorCode ? ` · boja ${escapeHtml(item.colorCode)}` : ""}${item.size ? ` · ${escapeHtml(item.size)}` : ""}</span>
       </div>
       <label class="cart-quantity">Količina<input type="number" min="1" value="${item.quantity}" data-quantity="${index}"></label>
-      <div class="cart-item-price"><strong>${item.price === null ? "Na upit" : money(item.price * item.quantity)}</strong><small>${item.price === null ? "" : `${money(item.price)} / kom. bez PDV-a`}</small></div>
+      <div class="cart-item-price"><strong>${item.price === null ? "Cena na upit" : money(item.price * item.quantity)}</strong><small>${item.price === null ? "Ponuda se formira nakon provere" : `${money(item.price)} / kom. bez PDV-a`}</small></div>
       <button class="remove-item" type="button" data-remove="${index}" aria-label="Ukloni proizvod">×</button>
     </article>`).join("");
 
-  const total = items.reduce((sum, item) => sum + (Number(item.price) || 0) * Number(item.quantity || 0), 0);
-  totalElement.textContent = money(total);
+  const pricedItems = displayItems.filter(item => item.price !== null);
+  const hasPriceOnRequest = pricedItems.length !== displayItems.length;
+  const total = pricedItems.reduce(
+    (sum, item) => sum + item.price * Number(item.quantity || 0),
+    0
+  );
+
+  if (hasPriceOnRequest && pricedItems.length === 0) {
+    totalLabelElement.textContent = "Ukupna cena";
+    totalElement.textContent = "Cena na upit";
+  } else if (hasPriceOnRequest) {
+    totalLabelElement.textContent = "Poznati iznos bez PDV-a";
+    totalElement.textContent = `${money(total)} + cena na upit`;
+  } else {
+    totalLabelElement.textContent = "Procena bez PDV-a";
+    totalElement.textContent = money(total);
+  }
 }
 
 itemsElement.addEventListener("change", event => {

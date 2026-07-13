@@ -70,7 +70,7 @@ async function mapWithConcurrency(items, limit, callback) {
 
 function formatPrice(value) {
   const price = Number(value);
-  return Number.isFinite(price)
+  return Number.isFinite(price) && price > 0
     ? `${price.toLocaleString("sr-RS", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
     : "Cena na upit";
 }
@@ -383,7 +383,9 @@ elements.quoteButton.addEventListener("click", () => {
     code: loadedVariantDetail.code || selectedVariant.code || "",
     colorCode: selectedColor?.colorCode || "",
     size: selectedVariant.size || "",
-    price: Number.isFinite(Number(loadedVariantDetail.price)) ? Number(loadedVariantDetail.price) : null,
+    price: Number.isFinite(Number(loadedVariantDetail.price)) && Number(loadedVariantDetail.price) > 0
+      ? Number(loadedVariantDetail.price)
+      : null,
     image: loadedVariantDetail.image || fallbackImageForId(selectedVariant.id),
     quantity,
   });
