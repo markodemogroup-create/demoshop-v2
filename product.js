@@ -29,6 +29,7 @@ const elements = {
   productDescriptionLong: document.getElementById("productDescriptionLong"),
   productSpecifications: document.getElementById("productSpecifications"),
   productLogistics: document.getElementById("productLogistics"),
+  productPrintMethodsBlock: document.getElementById("productPrintMethodsBlock"),
   productPrintMethods: document.getElementById("productPrintMethods"),
 };
 
@@ -108,16 +109,33 @@ function renderProductInformation(detail) {
 
   const dimensions = detail.logistics?.width != null
     ? `${detail.logistics.depth} × ${detail.logistics.width} × ${detail.logistics.height} ${detail.logistics.dimensionUnit || ""}` : null;
+
+  const piecesPerCarton = Number(detail.packaging?.piecesPerCarton);
+  const grossWeightPerPiece = Number(detail.logistics?.grossWeight);
+  const cartonWeight = Number.isFinite(piecesPerCarton) && piecesPerCarton > 0 &&
+    Number.isFinite(grossWeightPerPiece) && grossWeightPerPiece > 0
+      ? piecesPerCarton * grossWeightPerPiece
+      : null;
+  const cartonWeightText = cartonWeight === null
+    ? null
+    : `${Number(cartonWeight.toFixed(3)).toLocaleString("sr-RS")} ${detail.logistics?.weightUnit || ""}`.trim();
+
   elements.productLogistics.innerHTML = specRows([
     ["Komada po kartonu", detail.packaging?.piecesPerCarton], ["Dimenzije kartona", dimensions],
-    ["Bruto težina kartona", detail.logistics?.grossWeight != null ? `${detail.logistics.grossWeight} ${detail.logistics.weightUnit || ""}` : null],
+    ["Težina kartona", cartonWeightText],
     ["Zemlja porekla", detail.logistics?.originName], ["Carinska tarifa", detail.logistics?.customsTariff],
   ]);
 
-  const printMethods = [...(detail.printMethods || []), ...(detail.printInfo || [])];
+  const printMethods = (detail.printInfo || []).filter((item, index, items) => {
+    const label = String(item?.name || item?.value || "").trim().toLocaleLowerCase("sr-Latn");
+    return label && items.findIndex(candidate =>
+      String(candidate?.name || candidate?.value || "").trim().toLocaleLowerCase("sr-Latn") === label
+    ) === index;
+  });
   elements.productPrintMethods.innerHTML = printMethods.length
     ? printMethods.map(item => `<span>${escapeHtml(item.name || item.value)}</span>`).join("")
-    : "<p>Informacije o štampi dostupne su na upit.</p>";
+    : "";
+  elements.productPrintMethodsBlock.classList.toggle("hidden", printMethods.length === 0);
 
   const hasInfo = Boolean(model.description || model.descriptionLong || specificationRows.length);
   elements.productExtra.classList.toggle("hidden", !hasInfo);
