@@ -1,0 +1,24 @@
+/* Dostupnost, lager i najavljeni dolazak varijanti */
+.variant-table-head,
+.variant-table-row {
+  grid-template-columns: 1.5fr .8fr .65fr .9fr;
+}
+
+.variant-card:has(#arrivalBlock:not(.hidden)) {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+@media (max-width: 700px) {
+  .variant-table-block {
+    overflow-x: auto;
+  }
+
+  .variant-table-head,
+  .variant-table-row {
+    min-width: 620px;
+  }
+
+  .variant-card:has(#arrivalBlock:not(.hidden)) {
+    grid-template-columns: 1fr;
+  }
+}

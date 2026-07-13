@@ -7,6 +7,7 @@
   <title>Proizvod — DemoShop</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
   <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="product-availability.css?v=15">
 </head>
 <body>
   <header class="site-header">
@@ -42,13 +43,14 @@
         </div>
 
         <div id="variantTableBlock" class="variant-table-block hidden">
-          <div class="variant-table-head"><span>Veličina</span><span>Cena</span><span>Zaliha</span></div>
+          <div class="variant-table-head"><span>Veličina</span><span>Cena</span><span>Zaliha</span><span>Dolazak</span></div>
           <div id="variantTableBody" class="variant-table-body"></div>
         </div>
 
         <div class="variant-card">
           <div><span>Šifra artikla</span><strong id="variantCode">—</strong></div>
           <div><span>Dostupnost</span><strong id="stock">—</strong></div>
+          <div id="arrivalBlock" class="hidden"><span>Najavljeni dolazak</span><strong id="arrival">—</strong></div>
         </div>
 
         <div class="add-to-cart-row">
@@ -75,6 +77,6 @@
     </section>
   </main>
   <script src="cart-store.js?v=7"></script>
-  <script src="product.js?v=14"></script>
+  <script src="product.js?v=15"></script>
 </body>
 </html>

@@ -21,6 +21,8 @@ const elements = {
   variantTableBody: document.getElementById("variantTableBody"),
   variantCode: document.getElementById("variantCode"),
   stock: document.getElementById("stock"),
+  arrivalBlock: document.getElementById("arrivalBlock"),
+  arrival: document.getElementById("arrival"),
   quoteButton: document.getElementById("quoteButton"),
   quantity: document.getElementById("quantity"),
   cartFeedback: document.getElementById("cartFeedback"),
@@ -79,6 +81,30 @@ function formatStock(value) {
   const stock = Number(value);
   if (!Number.isFinite(stock) || stock <= 0) return "Nema na lageru";
   return `${stock.toLocaleString("sr-RS")} kom. na lageru`;
+}
+
+function parseArrivalDate(value) {
+  if (!value) return null;
+  const dotNetMatch = String(value).match(/\/Date\((\d+)\)\//);
+  const date = new Date(dotNetMatch ? Number(dotNetMatch[1]) : value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function arrivalSummary(detail) {
+  const arrivals = Array.isArray(detail?.arrivals) ? detail.arrivals : [];
+  const arrival = arrivals.find(item => item?.date || Number(item?.quantity) > 0);
+  if (!arrival) return null;
+
+  const date = parseArrivalDate(arrival.date);
+  const dateLabel = date
+    ? date.toLocaleDateString("sr-RS", { day: "2-digit", month: "2-digit", year: "numeric" })
+    : "";
+  const quantity = Number(arrival.quantity);
+  const quantityLabel = Number.isFinite(quantity) && quantity > 0
+    ? `${quantity.toLocaleString("sr-RS")} kom.`
+    : "";
+
+  return [quantityLabel, dateLabel].filter(Boolean).join(" · ") || null;
 }
 
 function escapeHtml(value) {
@@ -224,6 +250,9 @@ async function loadVariantDetail(variant) {
     elements.variantCode.textContent = detail.code || variant.code || "—";
     elements.price.textContent = formatPrice(detail.price);
     elements.stock.textContent = formatStock(detail.stock);
+    const arrival = arrivalSummary(detail);
+    elements.arrivalBlock.classList.toggle("hidden", !arrival);
+    elements.arrival.textContent = arrival || "—";
     renderGallery(detail);
     renderProductInformation(detail);
     hideMessage();
@@ -231,6 +260,7 @@ async function loadVariantDetail(variant) {
     if (requestNumber !== variantRequestNumber) return;
     elements.price.textContent = "Cena nije dostupna";
     elements.stock.textContent = "Lager nije dostupan";
+    elements.arrivalBlock.classList.add("hidden");
     const fallbackImage = fallbackImageForId(variant.id);
     if (fallbackImage) renderGallery({ image: fallbackImage, name: variant.name || product?.name });
     showMessage("Nije uspelo učitavanje izabrane varijante. Pokušajte ponovo.");
@@ -249,7 +279,7 @@ async function renderVariantTable(variants) {
   elements.variantTableBody.innerHTML = variants.map(variant => `
     <button class="variant-table-row loading" type="button">
       <span><strong>${variant.size || "—"}</strong><small>${variant.code || ""}</small></span>
-      <span>Učitavanje…</span><span>—</span>
+      <span>Učitavanje…</span><span>—</span><span>—</span>
     </button>`).join("");
 
   const details = await mapWithConcurrency(variants, 3, variant => getVariantDetail(variant.id));
@@ -258,11 +288,13 @@ async function renderVariantTable(variants) {
   elements.variantTableBody.innerHTML = variants.map((variant, index) => {
     const detail = details[index];
     const stock = Number(detail?.stock);
+    const arrival = arrivalSummary(detail);
     return `
       <button class="variant-table-row" type="button" data-index="${index}">
         <span><strong>${variant.size || "—"}</strong><small>${detail?.code || variant.code || ""}</small></span>
         <span>${formatPrice(detail?.price)}</span>
         <span class="${stock > 0 ? "in-stock" : "out-stock"}">${stock > 0 ? stock.toLocaleString("sr-RS") : "—"}</span>
+        <span>${arrival || "—"}</span>
       </button>`;
   }).join("");
 
