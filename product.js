@@ -92,6 +92,19 @@ function specRows(rows) {
     .map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("");
 }
 
+function normalizedPrintLabel(item) {
+  return String(item?.name || item?.value || "")
+    .trim()
+    .toLocaleLowerCase("sr-Latn")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function isRecommendedPrintMethod(item) {
+  const label = normalizedPrintLabel(item);
+  return /(sito|tampon|laser|preslik|dtg|dtf|digital|sublim|vez|gravur|\buv\b|foliotisak|transfer|dekal|doming|epoksi|embos|stamp)/i.test(label);
+}
+
 function renderProductInformation(detail) {
   const model = detail?.model || {};
   elements.productDescription.textContent = model.description || "";
@@ -126,11 +139,12 @@ function renderProductInformation(detail) {
     ["Zemlja porekla", detail.logistics?.originName], ["Carinska tarifa", detail.logistics?.customsTariff],
   ]);
 
-  const printMethods = (detail.printInfo || []).filter((item, index, items) => {
-    const label = String(item?.name || item?.value || "").trim().toLocaleLowerCase("sr-Latn");
-    return label && items.findIndex(candidate =>
-      String(candidate?.name || candidate?.value || "").trim().toLocaleLowerCase("sr-Latn") === label
-    ) === index;
+  const printMethods = [
+    ...(detail.printInfo || []),
+    ...(detail.printMethods || []),
+  ].filter(isRecommendedPrintMethod).filter((item, index, items) => {
+    const label = normalizedPrintLabel(item);
+    return label && items.findIndex(candidate => normalizedPrintLabel(candidate) === label) === index;
   });
   elements.productPrintMethods.innerHTML = printMethods.length
     ? printMethods.map(item => `<span>${escapeHtml(item.name || item.value)}</span>`).join("")
