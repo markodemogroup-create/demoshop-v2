@@ -7,7 +7,7 @@
   <title>Proizvod — DemoShop</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
   <link rel="stylesheet" href="style.css?v=9">
-  <link rel="stylesheet" href="product-availability.css?v=15">
+  <link rel="stylesheet" href="product-availability.css?v=16">
 </head>
 <body>
   <header class="site-header">
@@ -74,9 +74,14 @@
           <div><h3>Logističke informacije</h3><dl id="productLogistics" class="spec-list"></dl><div id="productPrintMethodsBlock"><h3>Preporučeni tip štampe</h3><div id="productPrintMethods" class="print-methods"></div></div></div>
         </div>
       </details>
+
+      <details id="productDocumentsSection" class="info-section hidden">
+        <summary>Dokumentacija</summary>
+        <div id="productDocuments" class="document-list"></div>
+      </details>
     </section>
   </main>
   <script src="cart-store.js?v=7"></script>
-  <script src="product.js?v=15"></script>
+  <script src="product.js?v=16"></script>
 </body>
 </html>

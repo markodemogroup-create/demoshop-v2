@@ -33,6 +33,8 @@ const elements = {
   productLogistics: document.getElementById("productLogistics"),
   productPrintMethodsBlock: document.getElementById("productPrintMethodsBlock"),
   productPrintMethods: document.getElementById("productPrintMethods"),
+  productDocumentsSection: document.getElementById("productDocumentsSection"),
+  productDocuments: document.getElementById("productDocuments"),
 };
 
 let product;
@@ -131,6 +133,38 @@ function isRecommendedPrintMethod(item) {
   return /(sito|tampon|laser|preslik|dtg|dtf|digital|sublim|vez|gravur|\buv\b|foliotisak|transfer|dekal|doming|epoksi|embos|stamp)/i.test(label);
 }
 
+function safeDocumentUrl(item) {
+  const candidate = String(item?.url || item?.image || "").trim();
+  if (!candidate) return "";
+  try {
+    const url = new URL(candidate);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function renderProductDocuments(detail) {
+  const items = [
+    ...(detail?.certificates || []).map(item => ({ ...item, type: "Sertifikat" })),
+    ...(detail?.documents || []).map(item => ({ ...item, type: "Dokument" })),
+  ].filter((item, index, all) => {
+    const key = `${item.name || item.fileName || item.value || ""}|${safeDocumentUrl(item)}`;
+    return key !== "|" && all.findIndex(candidate =>
+      `${candidate.name || candidate.fileName || candidate.value || ""}|${safeDocumentUrl(candidate)}` === key
+    ) === index;
+  });
+
+  elements.productDocumentsSection.classList.toggle("hidden", items.length === 0);
+  elements.productDocuments.innerHTML = items.map((item, index) => {
+    const label = item.name || item.fileName || item.value || `${item.type} ${index + 1}`;
+    const url = safeDocumentUrl(item);
+    return url
+      ? `<a class="document-item" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"><span>${escapeHtml(item.type)}</span><strong>${escapeHtml(label)}</strong><em>Otvori ↗</em></a>`
+      : `<div class="document-item document-item-static"><span>${escapeHtml(item.type)}</span><strong>${escapeHtml(label)}</strong></div>`;
+  }).join("");
+}
+
 function renderProductInformation(detail) {
   const model = detail?.model || {};
   elements.productDescription.textContent = model.description || "";
@@ -176,6 +210,7 @@ function renderProductInformation(detail) {
     ? printMethods.map(item => `<span>${escapeHtml(item.name || item.value)}</span>`).join("")
     : "";
   elements.productPrintMethodsBlock.classList.toggle("hidden", printMethods.length === 0);
+  renderProductDocuments(detail);
 
   const hasInfo = Boolean(model.description || model.descriptionLong || specificationRows.length);
   elements.productExtra.classList.toggle("hidden", !hasInfo);
