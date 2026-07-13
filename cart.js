@@ -90,7 +90,10 @@ document.getElementById("sendQuote").addEventListener("click", async () => {
 
     window.DemoCart.write([]);
     render();
-    formMessage.textContent = "Upit je uspešno poslat na Demo Group email.";
+    const quoteReference = data.quoteReference || "";
+    formMessage.textContent = quoteReference
+      ? `Upit ${quoteReference} je uspešno poslat na Demo Group email.`
+      : "Upit je uspešno poslat na Demo Group email.";
     formMessage.classList.add("form-success");
     sendButton.textContent = "Upit je poslat ✓";
   } catch (error) {
