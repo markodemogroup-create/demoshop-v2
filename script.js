@@ -75,7 +75,7 @@ function formatPrice(value) {
 
 function cardTemplate(product, index) {
   const model = product.modelCode || "";
-  const href = `product.html?model=${encodeURIComponent(model)}`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=17`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
 
   return `
