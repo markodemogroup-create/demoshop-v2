@@ -24,7 +24,15 @@ const els = {
   paginationText: document.getElementById("paginationText"),
 };
 
-const state = { page: 1, totalPages: 1, search: "", category: "", subCategory: "", requestId: 0 };
+const state = {
+  page: 1,
+  totalPages: 1,
+  search: "",
+  category: "",
+  subCategory: "",
+  collectionLabel: "",
+  requestId: 0,
+};
 
 const CATEGORY_LABELS = {
   TX: "Tekstil", UB: "USB memorije", KS: "Kućni program", TP: "Torbe i putovanje",
@@ -154,13 +162,44 @@ function closeCategoriesMenu() {
   els.categoriesToggle.setAttribute("aria-expanded", "false");
 }
 
-function applyCategory(category, subCategory = "") {
+function applyCategory(category, subCategory = "", options = {}) {
   state.category = category;
   state.subCategory = subCategory;
+  state.search = options.search || "";
+  state.collectionLabel = options.label || "";
   state.page = 1;
+  els.searchInput.value = state.search;
   closeCategoriesMenu();
   loadProducts();
   window.scrollTo({ top: 300, behavior: "smooth" });
+}
+
+function subcategoryTemplate(categoryCode, sub) {
+  const subgroups = window.CATALOG_TAXONOMY?.[sub.code] || [];
+
+  if (!subgroups.length) {
+    return `
+      <button type="button" data-category="${escapeHtml(categoryCode)}" data-subcategory="${escapeHtml(sub.code)}">
+        ${escapeHtml(subCategoryLabel(sub.code))}<small>${sub.count}</small>
+      </button>`;
+  }
+
+  return `
+    <div class="menu-subcategory-group">
+      <button type="button" class="menu-subcategory-title" data-category="${escapeHtml(categoryCode)}" data-subcategory="${escapeHtml(sub.code)}">
+        ${escapeHtml(subCategoryLabel(sub.code))}<small>${sub.count}</small>
+      </button>
+      <div class="menu-tertiary">
+        ${subgroups.map(item => `
+          <button type="button"
+            data-category="${escapeHtml(categoryCode)}"
+            data-subcategory="${escapeHtml(sub.code)}"
+            data-query="${escapeHtml(item.query)}"
+            data-label="${escapeHtml(item.label)}">
+            ${escapeHtml(item.label)}
+          </button>`).join("")}
+      </div>
+    </div>`;
 }
 
 async function loadCategories() {
@@ -176,10 +215,7 @@ async function loadCategories() {
           <span>${escapeHtml(categoryLabel(category.code))}</span><small>${Number(category.count).toLocaleString("sr-RS")}</small>
         </button>
         <div class="menu-subcategories">
-          ${category.subCategories.map(sub => `
-            <button type="button" data-category="${escapeHtml(category.code)}" data-subcategory="${escapeHtml(sub.code)}">
-              ${escapeHtml(subCategoryLabel(sub.code))}<small>${sub.count}</small>
-            </button>`).join("")}
+          ${category.subCategories.map(sub => subcategoryTemplate(category.code, sub)).join("")}
         </div>
       </section>`).join("");
   } catch (error) {
@@ -215,7 +251,7 @@ async function loadProducts() {
     els.apiStatus.textContent = "Katalog ažuriran";
     els.heroTotal.textContent = total.toLocaleString("sr-RS");
     els.totalMatches.textContent = matches.toLocaleString("sr-RS");
-    const filterName = state.subCategory ? subCategoryLabel(state.subCategory) : categoryLabel(state.category);
+    const filterName = state.collectionLabel || (state.subCategory ? subCategoryLabel(state.subCategory) : categoryLabel(state.category));
     els.resultsLabel.textContent = state.search ? `rezultata za „${state.search}”` : "proizvoda";
     els.activeFilter.classList.toggle("hidden", !state.category);
     els.activeFilterName.textContent = filterName || "";
@@ -245,12 +281,14 @@ async function loadProducts() {
 els.searchForm?.addEventListener("submit", event => {
   event.preventDefault();
   state.search = els.searchInput.value.trim();
+  state.collectionLabel = "";
   state.page = 1;
   loadProducts();
 });
 
 els.clearSearch?.addEventListener("click", () => {
   state.search = "";
+  state.collectionLabel = "";
   state.page = 1;
   els.searchInput.value = "";
   loadProducts();
@@ -268,7 +306,12 @@ document.querySelectorAll(".quick-category").forEach(button => {
 
 els.categoriesGrid?.addEventListener("click", event => {
   const button = event.target.closest("button[data-category]");
-  if (button) applyCategory(button.dataset.category, button.dataset.subcategory || "");
+  if (button) {
+    applyCategory(button.dataset.category, button.dataset.subcategory || "", {
+      search: button.dataset.query || "",
+      label: button.dataset.label || "",
+    });
+  }
 });
 
 els.clearCategory?.addEventListener("click", () => applyCategory("", ""));
