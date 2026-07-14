@@ -378,10 +378,38 @@ async function prepareDimensionImage(detail) {
   elements.galleryModes?.classList.add("hidden");
   setGalleryMode("images");
 
+  const assetRoot = "https://apiv2.promosolution.services/content/ModelItem/";
   const ids = modelAssetIds(product?.modelCode, detail?.code, selectedVariant?.code);
-  const candidates = ids.map(id =>
-    `https://apiv2.promosolution.services/content/ModelItem/${id}_101.webp`
-  );
+  const modelNames = [
+    detail?.model?.name,
+    product?.name?.split(",")[0]
+  ]
+    .filter(Boolean)
+    .map(value => String(value).trim())
+    .filter(Boolean);
+
+  const customNames = [];
+  modelNames.forEach(name => {
+    const words = name.split(/\s+/).filter(Boolean);
+    const titleCase = words
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+
+    [name, titleCase, name.replace(/\s+/g, "_")].forEach(value => {
+      if (value && !customNames.includes(value)) customNames.push(value);
+    });
+  });
+
+  const candidates = [
+    ...ids.flatMap(id => [
+      `${assetRoot}${id}_101.webp`,
+      `${assetRoot}${id}_101.jpg`
+    ]),
+    ...customNames.flatMap(name => [
+      `${assetRoot}${encodeURIComponent(name)}_dim.jpg`,
+      `${assetRoot}${encodeURIComponent(name)}_dim.webp`
+    ])
+  ];
   const found = await firstWorkingImage(candidates);
   if (requestNumber !== dimensionProbeNumber || !found) return;
 
@@ -612,7 +640,7 @@ async function loadRelatedProducts() {
       const model = item.modelCode || "";
       const imageIds = modelAssetIds(model, item.representativeCode);
       const modelImageId = imageIds[0] || "";
-      const href = `product.html?model=${encodeURIComponent(model)}&v=28`;
+      const href = `product.html?model=${encodeURIComponent(model)}&v=29`;
       const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
       return `<article class="related-product-card" data-index="${index}" data-detail-id="${escapeHtml(item.representativeVariantId || "")}">
         <a class="related-product-media" href="${href}">
