@@ -522,7 +522,7 @@ async function loadRelatedProducts() {
       const display = productDisplayName(item.name);
       const model = item.modelCode || "";
       const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
-      const href = `product.html?model=${encodeURIComponent(model)}&v=23`;
+      const href = `product.html?model=${encodeURIComponent(model)}&v=24`;
       const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
       return `<article class="related-product-card" data-index="${index}" data-detail-id="${escapeHtml(item.representativeVariantId || "")}">
         <a class="related-product-media" href="${href}">

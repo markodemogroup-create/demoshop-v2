@@ -37,6 +37,8 @@ const state = {
   suggestionIndex: -1,
 };
 
+const variantDetailCache = new Map();
+
 const initialUrlParams = new URLSearchParams(window.location.search);
 state.search = initialUrlParams.get("search") || "";
 state.category = initialUrlParams.get("category") || "";
@@ -123,25 +125,70 @@ async function loadSearchSuggestions() {
     if (!products.length) {
       els.searchSuggestions.innerHTML = `<div class="search-suggestion-empty">Nema pronađenih proizvoda.</div>`;
     } else {
-      els.searchSuggestions.innerHTML = products.map(product => {
+      els.searchSuggestions.innerHTML = products.map((product, index) => {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
-        const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
-        const href = `product.html?model=${encodeURIComponent(model)}&v=23`;
-        const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
+        const href = `product.html?model=${encodeURIComponent(model)}&v=24`;
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
-          ${image ? `<img src="${image}" alt="" loading="lazy" onerror="this.hidden=true">` : ""}
+          <img class="search-suggestion-image" data-suggestion-index="${index}" alt="" loading="lazy" hidden>
         </a>`;
       }).join("");
     }
     state.suggestionIndex = -1;
     els.searchSuggestions.classList.remove("hidden");
     els.searchInput.setAttribute("aria-expanded", "true");
+    hydrateSearchSuggestionImages(products, requestId);
   } catch (error) {
     if (requestId === state.suggestionRequestId) hideSearchSuggestions();
     console.error("Predlozi pretrage nisu dostupni", error);
   }
+}
+
+function loadImageFromCandidates(image, candidates) {
+  const urls = [...new Set(candidates.filter(Boolean))];
+  let cursor = 0;
+
+  function tryNext() {
+    const url = urls[cursor++];
+    if (!url) {
+      image.hidden = true;
+      image.removeAttribute("src");
+      return;
+    }
+
+    image.hidden = true;
+    image.onload = () => {
+      image.hidden = false;
+      image.onload = null;
+      image.onerror = null;
+    };
+    image.onerror = tryNext;
+    image.src = url;
+  }
+
+  tryNext();
+}
+
+async function hydrateSearchSuggestionImages(products, requestId) {
+  await Promise.all(products.map(async (product, index) => {
+    const detail = await fetchVariantDetail(product.representativeVariantId);
+    if (requestId !== state.suggestionRequestId) return;
+
+    const image = els.searchSuggestions?.querySelector(`[data-suggestion-index="${index}"]`);
+    if (!image) return;
+
+    const modelImageId = String(product.modelCode || "").replace(/[^a-zA-Z0-9]/g, "");
+    const modelImage = modelImageId
+      ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp`
+      : "";
+
+    loadImageFromCandidates(image, [
+      modelImage,
+      detail?.image,
+      ...(Array.isArray(detail?.images) ? detail.images : []),
+    ]);
+  }));
 }
 
 let suggestionTimer;
@@ -160,7 +207,7 @@ function formatPrice(value) {
 function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
-  const href = `product.html?model=${encodeURIComponent(model)}&v=23`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=24`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
 
@@ -193,12 +240,20 @@ function cardTemplate(product, index) {
 
 async function fetchVariantDetail(id) {
   if (!id) return null;
-  const response = await fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}`, {
+  if (variantDetailCache.has(id)) return variantDetailCache.get(id);
+
+  const detailPromise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}`, {
     headers: { Accept: "application/json" },
-  });
-  if (!response.ok) return null;
-  const data = await response.json();
-  return data.success ? data.variant : null;
+  })
+    .then(async response => {
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.success ? data.variant : null;
+    })
+    .catch(() => null);
+
+  variantDetailCache.set(id, detailPromise);
+  return detailPromise;
 }
 
 function applyCardDetail(card, detail) {
