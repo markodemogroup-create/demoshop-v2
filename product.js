@@ -33,6 +33,8 @@ const elements = {
   productLogistics: document.getElementById("productLogistics"),
   productPrintMethodsBlock: document.getElementById("productPrintMethodsBlock"),
   productPrintMethods: document.getElementById("productPrintMethods"),
+  productVideoSection: document.getElementById("productVideoSection"),
+  productVideo: document.getElementById("productVideo"),
   productDocumentsSection: document.getElementById("productDocumentsSection"),
   productDocuments: document.getElementById("productDocuments"),
   productMeasurementsSection: document.getElementById("productMeasurementsSection"),
@@ -183,6 +185,44 @@ function normalizedInfoLabel(value) {
   return String(value || "").trim().toLocaleLowerCase("sr-Latn").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
+function isVideoSpecification(item) {
+  const name = normalizedInfoLabel(item?.name);
+  const value = String(item?.value || "");
+  return /(^|\s)video(\s|$)/i.test(name) || /(?:player\.)?vimeo\.com|youtube(?:-nocookie)?\.com|youtu\.be|<iframe\b/i.test(value);
+}
+
+function extractProductVideo(detail) {
+  const candidates = [
+    detail?.video,
+    detail?.videoUrl,
+    detail?.model?.video,
+    detail?.model?.videoUrl,
+    ...(detail?.specifications || []).filter(isVideoSpecification).map(item => item?.value),
+  ].filter(Boolean).map(String);
+
+  for (const candidate of candidates) {
+    const decoded = candidate.replace(/&amp;/gi, "&");
+    const vimeo = decoded.match(/(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/i);
+    if (vimeo) return { type: "vimeo", embedUrl: `https://player.vimeo.com/video/${vimeo[1]}?title=0&byline=0&portrait=0` };
+
+    const youtube = decoded.match(/(?:youtube(?:-nocookie)?\.com\/(?:embed\/|watch\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/i);
+    if (youtube) return { type: "youtube", embedUrl: `https://www.youtube-nocookie.com/embed/${youtube[1]}` };
+  }
+
+  return null;
+}
+
+function renderProductVideo(detail) {
+  const video = extractProductVideo(detail);
+  elements.productVideoSection?.classList.toggle("hidden", !video);
+  if (!elements.productVideo) return Boolean(video);
+
+  elements.productVideo.innerHTML = video
+    ? `<div class="product-video-frame"><iframe src="${escapeHtml(video.embedUrl)}" title="Video proizvoda" loading="lazy" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`
+    : "";
+  return Boolean(video);
+}
+
 function isMeasurementLabel(value) {
   return /(mera|mere|merna|dimenz|size|sizes|measurement|chest|body length|width|height|duzina|sirina|visina|precnik|zapremin|obim)/i.test(normalizedInfoLabel(value));
 }
@@ -217,13 +257,15 @@ function renderProductInformation(detail) {
   elements.productDescription.textContent = model.description || "";
   elements.productDescriptionLong.textContent = model.descriptionLong || "";
 
+  const publicSpecifications = (detail.specifications || []).filter(item => !isVideoSpecification(item));
+
   const specificationRows = [
     ["Šifra", detail.code], ["Model", model.name], ["Brend", detail.brand?.name],
     ["Boja", detail.shade?.name || detail.color?.name], ["Veličina", detail.size?.id],
     ["Pakovanje", detail.packaging?.packageInfo || detail.packaging?.package],
     ["Neto težina", detail.logistics?.netWeight != null ? `${detail.logistics.netWeight} ${detail.logistics.weightUnit || ""}` : null],
     ["EAN", detail.ean], ["Stranica kataloga", detail.catalog?.page],
-    ...((detail.specifications || []).map(item => [item.name, item.value])),
+    ...(publicSpecifications.map(item => [item.name, item.value])),
   ];
   elements.productSpecifications.innerHTML = specRows(specificationRows);
 
@@ -257,6 +299,7 @@ function renderProductInformation(detail) {
     ? printMethods.map(item => `<span>${escapeHtml(item.name || item.value)}</span>`).join("")
     : "";
   elements.productPrintMethodsBlock.classList.toggle("hidden", printMethods.length === 0);
+  renderProductVideo(detail);
   renderProductDocuments(detail);
   renderProductMeasurements(detail);
 
@@ -479,7 +522,7 @@ async function loadRelatedProducts() {
       const display = productDisplayName(item.name);
       const model = item.modelCode || "";
       const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
-      const href = `product.html?model=${encodeURIComponent(model)}&v=22`;
+      const href = `product.html?model=${encodeURIComponent(model)}&v=23`;
       const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
       return `<article class="related-product-card" data-index="${index}" data-detail-id="${escapeHtml(item.representativeVariantId || "")}">
         <a class="related-product-media" href="${href}">
