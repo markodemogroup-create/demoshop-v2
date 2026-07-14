@@ -38,6 +38,8 @@ const state = {
 };
 
 const variantDetailCache = new Map();
+let menuCategories = [];
+const menuSelection = { categoryCode: "", subCategoryCode: "" };
 
 const initialUrlParams = new URLSearchParams(window.location.search);
 state.search = initialUrlParams.get("search") || "";
@@ -145,7 +147,7 @@ async function loadSearchSuggestions() {
       els.searchSuggestions.innerHTML = products.map((product, index) => {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
-        const href = `product.html?model=${encodeURIComponent(model)}&v=30`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=31`;
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
           <img class="search-suggestion-image" data-suggestion-index="${index}" alt="">
@@ -227,7 +229,7 @@ function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const imageIds = modelAssetIds(model, product.representativeCode);
   const modelImageId = imageIds[0] || "";
-  const href = `product.html?model=${encodeURIComponent(model)}&v=30`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=31`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
 
@@ -385,6 +387,7 @@ async function enrichCards(requestId) {
 function closeCategoriesMenu() {
   els.categoriesMenu.classList.add("hidden");
   els.categoriesToggle.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("menu-open");
 }
 
 function applyCategory(category, subCategory = "", options = {}) {
@@ -399,31 +402,85 @@ function applyCategory(category, subCategory = "", options = {}) {
   window.scrollTo({ top: 300, behavior: "smooth" });
 }
 
-function subcategoryTemplate(categoryCode, sub) {
-  const subgroups = window.CATALOG_TAXONOMY?.[sub.code] || [];
+function formatMenuCount(value) {
+  return Number(value || 0).toLocaleString("sr-RS");
+}
 
-  if (!subgroups.length) {
-    return `
-      <button type="button" data-category="${escapeHtml(categoryCode)}" data-subcategory="${escapeHtml(sub.code)}">
-        ${escapeHtml(subCategoryLabel(sub.code))}<small>${sub.count}</small>
-      </button>`;
-  }
+function renderCategoriesMenu() {
+  if (!menuCategories.length) return;
 
-  return `
-    <div class="menu-subcategory-group">
-      <button type="button" class="menu-subcategory-title" data-category="${escapeHtml(categoryCode)}" data-subcategory="${escapeHtml(sub.code)}">
-        ${escapeHtml(subCategoryLabel(sub.code))}<small>${sub.count}</small>
-      </button>
-      <div class="menu-tertiary">
-        ${subgroups.map(item => `
-          <button type="button"
-            data-category="${escapeHtml(categoryCode)}"
-            data-subcategory="${escapeHtml(sub.code)}"
-            data-query="${escapeHtml(item.query)}"
-            data-label="${escapeHtml(item.label)}">
-            ${escapeHtml(item.label)}
-          </button>`).join("")}
-      </div>
+  const activeCategory = menuCategories.find(category => category.code === menuSelection.categoryCode)
+    || menuCategories.find(category => category.code === state.category)
+    || menuCategories[0];
+  const subCategories = Array.isArray(activeCategory.subCategories) ? activeCategory.subCategories : [];
+  const activeSubCategory = subCategories.find(sub => sub.code === menuSelection.subCategoryCode)
+    || subCategories.find(sub => sub.code === state.subCategory)
+    || subCategories[0]
+    || null;
+  const narrowerGroups = activeSubCategory
+    ? (window.CATALOG_TAXONOMY?.[activeSubCategory.code] || [])
+    : [];
+
+  menuSelection.categoryCode = activeCategory.code;
+  menuSelection.subCategoryCode = activeSubCategory?.code || "";
+
+  els.categoriesGrid.innerHTML = `
+    <div class="category-browser">
+      <section class="category-level category-level-primary" aria-label="Kategorije">
+        <div class="category-level-heading">
+          <div><span>Korak 1</span><strong>Kategorije</strong></div>
+          <button type="button" class="menu-all-link" data-menu-apply data-category="">Ceo katalog</button>
+        </div>
+        <div class="menu-step-list">
+          ${menuCategories.map(category => `
+            <button type="button" class="menu-step-button ${category.code === activeCategory.code ? "active" : ""}"
+              data-menu-category="${escapeHtml(category.code)}" aria-pressed="${category.code === activeCategory.code}">
+              <span>${escapeHtml(categoryLabel(category.code))}</span>
+              <small>${formatMenuCount(category.count)}</small>
+              <b aria-hidden="true">›</b>
+            </button>`).join("")}
+        </div>
+      </section>
+
+      <section class="category-level category-level-secondary" aria-label="Potkategorije">
+        <div class="category-level-heading">
+          <div><span>Korak 2</span><strong>${escapeHtml(categoryLabel(activeCategory.code))}</strong></div>
+          <button type="button" class="menu-all-link" data-menu-apply data-category="${escapeHtml(activeCategory.code)}">
+            Prikaži sve
+          </button>
+        </div>
+        <div class="menu-step-list">
+          ${subCategories.map(sub => `
+            <button type="button" class="menu-step-button ${sub.code === activeSubCategory?.code ? "active" : ""}"
+              data-menu-subcategory="${escapeHtml(sub.code)}" aria-pressed="${sub.code === activeSubCategory?.code}">
+              <span>${escapeHtml(subCategoryLabel(sub.code))}</span>
+              <small>${formatMenuCount(sub.count)}</small>
+              <b aria-hidden="true">›</b>
+            </button>`).join("") || `<p class="menu-empty-copy">Za ovu kategoriju trenutno nema potkategorija.</p>`}
+        </div>
+      </section>
+
+      <section class="category-level category-level-tertiary" aria-label="Uže grupe proizvoda">
+        <div class="category-level-heading">
+          <div><span>Korak 3</span><strong>${escapeHtml(activeSubCategory ? subCategoryLabel(activeSubCategory.code) : "Izaberite grupu")}</strong></div>
+        </div>
+        ${activeSubCategory ? `
+          <button type="button" class="menu-featured-action" data-menu-apply
+            data-category="${escapeHtml(activeCategory.code)}" data-subcategory="${escapeHtml(activeSubCategory.code)}">
+            <span>Prikaži sve: <strong>${escapeHtml(subCategoryLabel(activeSubCategory.code))}</strong></span>
+            <b aria-hidden="true">→</b>
+          </button>` : ""}
+        <div class="menu-tertiary-list">
+          ${narrowerGroups.map(item => `
+            <button type="button" data-menu-apply
+              data-category="${escapeHtml(activeCategory.code)}"
+              data-subcategory="${escapeHtml(activeSubCategory.code)}"
+              data-query="${escapeHtml(item.query)}"
+              data-label="${escapeHtml(item.label)}">
+              <span>${escapeHtml(item.label)}</span><b aria-hidden="true">→</b>
+            </button>`).join("") || `<p class="menu-empty-copy">Nema dodatne podele. Izaberite „Prikaži sve“ za ovu potkategoriju.</p>`}
+        </div>
+      </section>
     </div>`;
 }
 
@@ -434,15 +491,10 @@ async function loadCategories() {
     const data = await response.json();
     if (!data.success || !Array.isArray(data.categories)) return;
 
-    els.categoriesGrid.innerHTML = data.categories.map(category => `
-      <section class="menu-category">
-        <button type="button" class="menu-category-title" data-category="${escapeHtml(category.code)}">
-          <span>${escapeHtml(categoryLabel(category.code))}</span><small>${Number(category.count).toLocaleString("sr-RS")}</small>
-        </button>
-        <div class="menu-subcategories">
-          ${category.subCategories.map(sub => subcategoryTemplate(category.code, sub)).join("")}
-        </div>
-      </section>`).join("");
+    menuCategories = data.categories;
+    menuSelection.categoryCode = state.category;
+    menuSelection.subCategoryCode = state.subCategory;
+    renderCategoriesMenu();
   } catch (error) {
     console.error("Kategorije nisu učitane", error);
   }
@@ -546,8 +598,14 @@ els.clearSearch?.addEventListener("click", () => {
 
 els.categoriesToggle?.addEventListener("click", () => {
   const willOpen = els.categoriesMenu.classList.contains("hidden");
+  if (willOpen && menuCategories.length) {
+    menuSelection.categoryCode = state.category;
+    menuSelection.subCategoryCode = state.subCategory;
+    renderCategoriesMenu();
+  }
   els.categoriesMenu.classList.toggle("hidden", !willOpen);
   els.categoriesToggle.setAttribute("aria-expanded", String(willOpen));
+  document.body.classList.toggle("menu-open", willOpen);
 });
 
 document.querySelectorAll(".quick-category").forEach(button => {
@@ -555,11 +613,30 @@ document.querySelectorAll(".quick-category").forEach(button => {
 });
 
 els.categoriesGrid?.addEventListener("click", event => {
-  const button = event.target.closest("button[data-category]");
-  if (button) {
-    applyCategory(button.dataset.category, button.dataset.subcategory || "", {
-      search: button.dataset.query || "",
-      label: button.dataset.label || "",
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target) return;
+  event.stopPropagation();
+
+  const categoryStep = target.closest("button[data-menu-category]");
+  if (categoryStep) {
+    menuSelection.categoryCode = categoryStep.dataset.menuCategory || "";
+    menuSelection.subCategoryCode = "";
+    renderCategoriesMenu();
+    return;
+  }
+
+  const subCategoryStep = target.closest("button[data-menu-subcategory]");
+  if (subCategoryStep) {
+    menuSelection.subCategoryCode = subCategoryStep.dataset.menuSubcategory || "";
+    renderCategoriesMenu();
+    return;
+  }
+
+  const applyButton = target.closest("button[data-menu-apply]");
+  if (applyButton) {
+    applyCategory(applyButton.dataset.category || "", applyButton.dataset.subcategory || "", {
+      search: applyButton.dataset.query || "",
+      label: applyButton.dataset.label || "",
     });
   }
 });
@@ -567,6 +644,11 @@ els.categoriesGrid?.addEventListener("click", event => {
 els.clearCategory?.addEventListener("click", () => applyCategory("", ""));
 
 document.addEventListener("keydown", event => { if (event.key === "Escape") closeCategoriesMenu(); });
+document.addEventListener("click", event => {
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target || els.categoriesMenu.classList.contains("hidden")) return;
+  if (!els.categoriesMenu.contains(target) && !els.categoriesToggle.contains(target)) closeCategoriesMenu();
+});
 
 els.prev?.addEventListener("click", () => {
   if (state.page > 1) { state.page -= 1; loadProducts(); window.scrollTo({ top: 260, behavior: "smooth" }); }

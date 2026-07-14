@@ -6,7 +6,7 @@
   <meta name="description" content="DemoShop katalog promotivnih proizvoda sa bojama, veličinama, cenama i lagerom.">
   <title>DemoShop — Katalog promotivnih proizvoda</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
-  <link rel="stylesheet" href="style.css?v=30">
+  <link rel="stylesheet" href="style.css?v=31">
   <link rel="stylesheet" href="catalog-taxonomy.css?v=13">
 </head>
 <body>
@@ -23,7 +23,7 @@
 
   <nav class="catalog-nav" aria-label="Glavna navigacija kataloga">
     <div class="container nav-inner">
-      <button id="categoriesToggle" class="categories-toggle" type="button" aria-expanded="false">Kategorije <span>⌄</span></button>
+      <button id="categoriesToggle" class="categories-toggle" type="button" aria-expanded="false" aria-controls="categoriesMenu">Kategorije <span aria-hidden="true">⌄</span></button>
       <button class="quick-category" type="button" data-category="TX">Tekstil</button>
       <button class="quick-category" type="button" data-category="KS">Kućni program</button>
       <button class="quick-category" type="button" data-category="TE">Tehnologija</button>
@@ -82,6 +82,6 @@
   <footer class="site-footer"><div class="container">DemoShop · Demo Group katalog · Podaci se automatski osvežavaju</div></footer>
   <script src="cart-store.js?v=7"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=30"></script>
+  <script src="script.js?v=31"></script>
 </body>
 </html>
