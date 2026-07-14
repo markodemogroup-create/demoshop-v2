@@ -75,11 +75,12 @@ function formatPrice(value) {
 
 function cardTemplate(product, index) {
   const model = product.modelCode || "";
+  const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
   const href = `product.html?model=${encodeURIComponent(model)}&v=17`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
 
   return `
-    <article class="product-card" data-detail-id="${escapeHtml(product.representativeVariantId || "")}" data-index="${index}">
+    <article class="product-card" data-detail-id="${escapeHtml(product.representativeVariantId || "")}" data-model-image-id="${escapeHtml(modelImageId)}" data-index="${index}">
       <a class="card-image-link" href="${href}" aria-label="Otvori ${escapeHtml(product.name || model)}">
         <div class="card-media">
           <div class="image-skeleton"></div>
@@ -122,7 +123,24 @@ function applyCardDetail(card, detail) {
   const price = card.querySelector(".card-price");
   skeleton?.remove();
 
-  if (detail?.image) {
+  const modelImageId = card.dataset.modelImageId || "";
+  const modelImageUrl = modelImageId
+    ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp`
+    : "";
+
+  if (modelImageUrl) {
+    image.alt = detail?.name || "Proizvod";
+    image.onload = () => image.classList.add("loaded");
+    image.onerror = () => {
+      image.onerror = null;
+      if (detail?.image) {
+        image.src = detail.image;
+      } else {
+        media?.classList.add("no-image");
+      }
+    };
+    image.src = modelImageUrl;
+  } else if (detail?.image) {
     image.src = detail.image;
     image.alt = detail.name || "Proizvod";
     image.classList.add("loaded");
@@ -140,9 +158,9 @@ function applyCardDetail(card, detail) {
   }
   price.textContent = formatPrice(detail?.price);
 
-  const primaryUrl = detail?.image || "";
-  const hoverUrl = [...new Set(Array.isArray(detail?.images) ? detail.images : [])]
-    .find(url => url && url.split("?")[0] !== primaryUrl.split("?")[0]);
+  const hoverUrl = modelImageId
+    ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_090.webp`
+    : "";
 
   if (hoverImage && hoverUrl) {
     const loadHoverImage = () => {
