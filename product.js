@@ -8,6 +8,9 @@ const elements = {
   detail: document.getElementById("productDetail"),
   mainImage: document.getElementById("mainImage"),
   thumbs: document.getElementById("thumbs"),
+  galleryModes: document.getElementById("galleryModes"),
+  galleryImagesButton: document.getElementById("galleryImagesButton"),
+  galleryDimensionsButton: document.getElementById("galleryDimensionsButton"),
   breadcrumb: document.getElementById("breadcrumb"),
   name: document.getElementById("productName"),
   model: document.getElementById("modelCode"),
@@ -50,6 +53,11 @@ let selectedVariant;
 let loadedVariantDetail;
 let variantRequestNumber = 0;
 let colorRequestNumber = 0;
+let dimensionProbeNumber = 0;
+let galleryImages = [];
+let activeGalleryImage = null;
+let dimensionImageUrl = null;
+let galleryMode = "images";
 const detailCache = new Map();
 
 async function getVariantDetail(id) {
@@ -328,6 +336,59 @@ function uniqueImages(detail) {
   return [...new Set([detail?.image, ...(detail?.images || [])].filter(Boolean))];
 }
 
+function firstWorkingImage(urls) {
+  const candidates = [...new Set(urls.filter(Boolean))];
+  return new Promise(resolve => {
+    let cursor = 0;
+    const tryNext = () => {
+      const url = candidates[cursor++];
+      if (!url) return resolve(null);
+      const image = new Image();
+      image.onload = () => resolve(url);
+      image.onerror = tryNext;
+      image.src = url;
+    };
+    tryNext();
+  });
+}
+
+function setGalleryMode(mode) {
+  if (mode === "dimensions" && !dimensionImageUrl) return;
+  galleryMode = mode;
+  const dimensionsActive = mode === "dimensions";
+
+  elements.galleryImagesButton?.classList.toggle("active", !dimensionsActive);
+  elements.galleryImagesButton?.setAttribute("aria-pressed", String(!dimensionsActive));
+  elements.galleryDimensionsButton?.classList.toggle("active", dimensionsActive);
+  elements.galleryDimensionsButton?.setAttribute("aria-pressed", String(dimensionsActive));
+  elements.thumbs?.classList.toggle("hidden", dimensionsActive);
+
+  if (dimensionsActive) {
+    elements.mainImage.src = dimensionImageUrl;
+    elements.mainImage.alt = `Dimenzije proizvoda ${product?.name || ""}`.trim();
+  } else if (activeGalleryImage || galleryImages[0]) {
+    elements.mainImage.src = activeGalleryImage || galleryImages[0];
+    elements.mainImage.alt = loadedVariantDetail?.name || product?.name || "Proizvod";
+  }
+}
+
+async function prepareDimensionImage(detail) {
+  const requestNumber = ++dimensionProbeNumber;
+  dimensionImageUrl = null;
+  elements.galleryModes?.classList.add("hidden");
+  setGalleryMode("images");
+
+  const ids = modelAssetIds(product?.modelCode, detail?.code, selectedVariant?.code);
+  const candidates = ids.map(id =>
+    `https://apiv2.promosolution.services/content/ModelItem/${id}_101.webp`
+  );
+  const found = await firstWorkingImage(candidates);
+  if (requestNumber !== dimensionProbeNumber || !found) return;
+
+  dimensionImageUrl = found;
+  elements.galleryModes?.classList.remove("hidden");
+}
+
 function fallbackImageForId(id) {
   const baseId = String(id || "").split("-")[0].replace(/[^a-zA-Z0-9]/g, "");
   return baseId ? `https://apiv2.promosolution.services/content/ModelItem/${baseId}_001.webp` : "";
@@ -351,7 +412,12 @@ function updateUrlShade(colorCode) {
 
 function renderGallery(detail) {
   const images = uniqueImages(detail);
+  galleryImages = images;
+  activeGalleryImage = images[0] || null;
+  galleryMode = "images";
+  dimensionImageUrl = null;
   elements.thumbs.innerHTML = "";
+  elements.galleryModes?.classList.add("hidden");
 
   if (!images.length) {
     elements.mainImage.removeAttribute("src");
@@ -368,12 +434,18 @@ function renderGallery(detail) {
 
   elements.thumbs.querySelectorAll(".thumb").forEach(button => {
     button.addEventListener("click", () => {
-      elements.mainImage.src = button.dataset.image;
+      activeGalleryImage = button.dataset.image;
+      elements.mainImage.src = activeGalleryImage;
       elements.thumbs.querySelectorAll(".thumb").forEach(item => item.classList.remove("active"));
       button.classList.add("active");
     });
   });
+
+  prepareDimensionImage(detail);
 }
+
+elements.galleryImagesButton?.addEventListener("click", () => setGalleryMode("images"));
+elements.galleryDimensionsButton?.addEventListener("click", () => setGalleryMode("dimensions"));
 
 async function loadVariantDetail(variant) {
   if (!variant?.id) return showMessage("Izabrana varijanta nema ispravan ID.");
@@ -540,7 +612,7 @@ async function loadRelatedProducts() {
       const model = item.modelCode || "";
       const imageIds = modelAssetIds(model, item.representativeCode);
       const modelImageId = imageIds[0] || "";
-      const href = `product.html?model=${encodeURIComponent(model)}&v=27`;
+      const href = `product.html?model=${encodeURIComponent(model)}&v=28`;
       const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
       return `<article class="related-product-card" data-index="${index}" data-detail-id="${escapeHtml(item.representativeVariantId || "")}">
         <a class="related-product-media" href="${href}">
