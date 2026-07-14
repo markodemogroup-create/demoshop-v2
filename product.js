@@ -479,13 +479,12 @@ async function loadRelatedProducts() {
       const display = productDisplayName(item.name);
       const model = item.modelCode || "";
       const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
-      const href = `product.html?model=${encodeURIComponent(model)}&v=21`;
+      const href = `product.html?model=${encodeURIComponent(model)}&v=22`;
       const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
-      const hover = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_090.webp` : "";
       return `<article class="related-product-card" data-index="${index}" data-detail-id="${escapeHtml(item.representativeVariantId || "")}">
         <a class="related-product-media" href="${href}">
           ${image ? `<img class="related-product-primary" src="${image}" alt="${escapeHtml(display.title)}" loading="lazy">` : ""}
-          ${hover ? `<img class="related-product-hover" src="${hover}" alt="" loading="lazy" onerror="this.remove()">` : ""}
+          <img class="related-product-hover" alt="" loading="lazy">
         </a>
         <div><small>Model ${escapeHtml(model)}</small><h3><a href="${href}">${escapeHtml(display.title)}</a></h3>${display.description ? `<p>${escapeHtml(display.description)}</p>` : ""}<strong class="related-product-price">Učitavanje…</strong></div>
       </article>`;
@@ -499,6 +498,20 @@ async function loadRelatedProducts() {
       card.querySelector(".related-product-price").textContent = formatPrice(detail?.price);
       const primary = card.querySelector(".related-product-primary");
       if (primary && detail?.image) primary.onerror = () => { primary.onerror = null; primary.src = detail.image; };
+      const hover = card.querySelector(".related-product-hover");
+      const primaryUrl = primary?.getAttribute("src") || "";
+      const actualImages = [...new Set([
+        detail?.image,
+        ...(Array.isArray(detail?.images) ? detail.images : []),
+      ].filter(Boolean))];
+      const hoverUrl = actualImages.find(url => url !== primaryUrl) || "";
+      if (hover && hoverUrl) {
+        hover.onload = () => card.classList.add("has-related-hover");
+        hover.onerror = () => hover.remove();
+        hover.src = hoverUrl;
+      } else {
+        hover?.remove();
+      }
     });
   } catch (error) {
     console.error("Slični proizvodi nisu dostupni", error);

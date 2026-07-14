@@ -127,7 +127,7 @@ async function loadSearchSuggestions() {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
         const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
-        const href = `product.html?model=${encodeURIComponent(model)}&v=21`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=22`;
         const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
@@ -160,7 +160,7 @@ function formatPrice(value) {
 function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
-  const href = `product.html?model=${encodeURIComponent(model)}&v=21`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=22`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
 
@@ -244,9 +244,11 @@ function applyCardDetail(card, detail) {
   }
   price.textContent = formatPrice(detail?.price);
 
-  const hoverUrl = modelImageId
-    ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_090.webp`
-    : "";
+  const detailImages = [...new Set([
+    detail?.image,
+    ...(Array.isArray(detail?.images) ? detail.images : []),
+  ].filter(Boolean))];
+  const hoverUrl = detailImages.find(url => url !== modelImageUrl) || "";
 
   if (hoverImage && hoverUrl) {
     const loadHoverImage = () => {
