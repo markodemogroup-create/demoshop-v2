@@ -145,10 +145,10 @@ async function loadSearchSuggestions() {
       els.searchSuggestions.innerHTML = products.map((product, index) => {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
-        const href = `product.html?model=${encodeURIComponent(model)}&v=26`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=27`;
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
-          <img class="search-suggestion-image" data-suggestion-index="${index}" alt="" loading="lazy" hidden>
+          <img class="search-suggestion-image" data-suggestion-index="${index}" alt="">
         </a>`;
       }).join("");
     }
@@ -170,13 +170,15 @@ function loadImageFromCandidates(image, candidates) {
     const url = urls[cursor++];
     if (!url) {
       image.hidden = true;
+      image.classList.remove("loaded");
       image.removeAttribute("src");
       return;
     }
 
-    image.hidden = true;
+    image.hidden = false;
+    image.classList.remove("loaded");
     image.onload = () => {
-      image.hidden = false;
+      image.classList.add("loaded");
       image.onload = null;
       image.onerror = null;
     };
@@ -225,7 +227,7 @@ function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const imageIds = modelAssetIds(model, product.representativeCode);
   const modelImageId = imageIds[0] || "";
-  const href = `product.html?model=${encodeURIComponent(model)}&v=26`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=27`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
 
