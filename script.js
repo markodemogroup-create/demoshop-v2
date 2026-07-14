@@ -12,6 +12,7 @@ const els = {
   grid: document.getElementById("productGrid"),
   searchForm: document.getElementById("searchForm"),
   searchInput: document.getElementById("searchInput"),
+  searchSuggestions: document.getElementById("searchSuggestions"),
   clearSearch: document.getElementById("clearSearch"),
   categoriesToggle: document.getElementById("categoriesToggle"),
   categoriesMenu: document.getElementById("categoriesMenu"),
@@ -32,7 +33,15 @@ const state = {
   subCategory: "",
   collectionLabel: "",
   requestId: 0,
+  suggestionRequestId: 0,
+  suggestionIndex: -1,
 };
+
+const initialUrlParams = new URLSearchParams(window.location.search);
+state.search = initialUrlParams.get("search") || "";
+state.category = initialUrlParams.get("category") || "";
+state.subCategory = initialUrlParams.get("subCategory") || "";
+if (els.searchInput) els.searchInput.value = state.search;
 
 const CATEGORY_LABELS = {
   TX: "Tekstil", UB: "USB memorije", KS: "Kućni program", TP: "Torbe i putovanje",
@@ -66,6 +75,81 @@ function escapeHtml(value) {
   })[character]);
 }
 
+const DISPLAY_COLOR_WORDS = /^(crn|crna|crni|crno|crne|bel|bela|beli|belo|bele|bijel|bijela|plav|plava|plavi|plavo|crven|crvena|crveni|crveno|zelen|zelena|zeleni|zeleno|žut|žuta|žuti|žuto|zut|zuta|zuti|zuto|siv|siva|sivi|sivo|roze|roza|pink|narandžast|narandžasta|narandzast|narandzasta|ljubičast|ljubičasta|ljubicast|ljubicasta|braon|teget|bež|bez|bordo|tirkiz|tirkizna|ciklama|lila|srebrn|srebrna|zlatn|zlatna|transparentan|transparentna)$/i;
+
+function productDisplayName(value) {
+  const parts = String(value || "").split(",").map(part => part.trim()).filter(Boolean);
+  const title = parts.shift() || "Bez naziva";
+  while (parts.length && DISPLAY_COLOR_WORDS.test(parts[parts.length - 1])) parts.pop();
+  return { title, description: parts.join(", ") };
+}
+
+function highlightSearchMatch(value, query) {
+  const text = String(value || "");
+  const needle = String(query || "").trim();
+  if (!needle) return escapeHtml(text);
+  const index = text.toLocaleLowerCase("sr-Latn").indexOf(needle.toLocaleLowerCase("sr-Latn"));
+  if (index < 0) return escapeHtml(text);
+  return `${escapeHtml(text.slice(0, index))}<mark>${escapeHtml(text.slice(index, index + needle.length))}</mark>${escapeHtml(text.slice(index + needle.length))}`;
+}
+
+function hideSearchSuggestions() {
+  state.suggestionIndex = -1;
+  els.searchSuggestions?.classList.add("hidden");
+  if (els.searchSuggestions) els.searchSuggestions.innerHTML = "";
+  els.searchInput?.setAttribute("aria-expanded", "false");
+}
+
+function selectSearchSuggestion(index) {
+  const items = [...(els.searchSuggestions?.querySelectorAll(".search-suggestion") || [])];
+  if (!items.length) return;
+  state.suggestionIndex = Math.max(0, Math.min(index, items.length - 1));
+  items.forEach((item, itemIndex) => item.classList.toggle("active", itemIndex === state.suggestionIndex));
+  items[state.suggestionIndex]?.scrollIntoView({ block: "nearest" });
+}
+
+async function loadSearchSuggestions() {
+  const query = els.searchInput?.value.trim() || "";
+  const requestId = ++state.suggestionRequestId;
+  if (query.length < 2) return hideSearchSuggestions();
+
+  try {
+    const searchParams = new URLSearchParams({ search: query, page: "1", limit: "6" });
+    const response = await fetch(`${API_BASE}/products-grouped?${searchParams}`, { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (requestId !== state.suggestionRequestId) return;
+    const products = Array.isArray(data.products) ? data.products : [];
+    if (!products.length) {
+      els.searchSuggestions.innerHTML = `<div class="search-suggestion-empty">Nema pronađenih proizvoda.</div>`;
+    } else {
+      els.searchSuggestions.innerHTML = products.map(product => {
+        const display = productDisplayName(product.name);
+        const model = product.modelCode || "";
+        const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
+        const href = `product.html?model=${encodeURIComponent(model)}&v=21`;
+        const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
+        return `<a class="search-suggestion" role="option" href="${href}">
+          <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
+          ${image ? `<img src="${image}" alt="" loading="lazy" onerror="this.hidden=true">` : ""}
+        </a>`;
+      }).join("");
+    }
+    state.suggestionIndex = -1;
+    els.searchSuggestions.classList.remove("hidden");
+    els.searchInput.setAttribute("aria-expanded", "true");
+  } catch (error) {
+    if (requestId === state.suggestionRequestId) hideSearchSuggestions();
+    console.error("Predlozi pretrage nisu dostupni", error);
+  }
+}
+
+let suggestionTimer;
+function scheduleSearchSuggestions() {
+  clearTimeout(suggestionTimer);
+  suggestionTimer = setTimeout(loadSearchSuggestions, 250);
+}
+
 function formatPrice(value) {
   const price = Number(value);
   return Number.isFinite(price) && price > 0
@@ -76,8 +160,9 @@ function formatPrice(value) {
 function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
-  const href = `product.html?model=${encodeURIComponent(model)}&v=17`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=21`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
+  const display = productDisplayName(product.name);
 
   return `
     <article class="product-card" data-detail-id="${escapeHtml(product.representativeVariantId || "")}" data-model-image-id="${escapeHtml(modelImageId)}" data-index="${index}">
@@ -91,7 +176,8 @@ function cardTemplate(product, index) {
       </a>
       <div class="card-content">
         <p class="card-category">${escapeHtml(category || "Promotivni proizvodi")}</p>
-        <h2><a href="${href}">${escapeHtml(product.name || "Bez naziva")}</a></h2>
+        <h2><a href="${href}">${escapeHtml(display.title)}</a></h2>
+        ${display.description ? `<p class="card-description">${escapeHtml(display.description)}</p>` : ""}
         <p class="card-code">Model ${escapeHtml(model)}</p>
         <div class="card-meta">
           <div><span class="card-price">Učitavanje…</span><small>po komadu</small></div>
@@ -321,13 +407,38 @@ async function loadProducts() {
 
 els.searchForm?.addEventListener("submit", event => {
   event.preventDefault();
+  hideSearchSuggestions();
   state.search = els.searchInput.value.trim();
   state.collectionLabel = "";
   state.page = 1;
   loadProducts();
 });
 
+els.searchInput?.setAttribute("aria-autocomplete", "list");
+els.searchInput?.setAttribute("aria-expanded", "false");
+els.searchInput?.addEventListener("input", scheduleSearchSuggestions);
+els.searchInput?.addEventListener("keydown", event => {
+  const items = [...(els.searchSuggestions?.querySelectorAll(".search-suggestion") || [])];
+  if (event.key === "ArrowDown" && items.length) {
+    event.preventDefault();
+    selectSearchSuggestion(state.suggestionIndex + 1);
+  } else if (event.key === "ArrowUp" && items.length) {
+    event.preventDefault();
+    selectSearchSuggestion(state.suggestionIndex <= 0 ? items.length - 1 : state.suggestionIndex - 1);
+  } else if (event.key === "Enter" && state.suggestionIndex >= 0 && items[state.suggestionIndex]) {
+    event.preventDefault();
+    window.location.href = items[state.suggestionIndex].href;
+  } else if (event.key === "Escape") {
+    hideSearchSuggestions();
+  }
+});
+
+document.addEventListener("pointerdown", event => {
+  if (!event.target.closest("#searchForm")) hideSearchSuggestions();
+});
+
 els.clearSearch?.addEventListener("click", () => {
+  hideSearchSuggestions();
   state.search = "";
   state.collectionLabel = "";
   state.page = 1;

@@ -6,7 +6,7 @@
   <meta name="description" content="Detalji proizvoda, dostupne boje, veličine, cena i lager.">
   <title>Proizvod — DemoShop</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="style.css?v=21">
   <link rel="stylesheet" href="product-availability.css?v=17">
 </head>
 <body>
@@ -79,9 +79,22 @@
         <summary>Dokumentacija</summary>
         <div id="productDocuments" class="document-list"></div>
       </details>
+
+      <details id="productMeasurementsSection" class="info-section hidden">
+        <summary>Mere i dimenzije</summary>
+        <div id="productMeasurements" class="measurement-content"></div>
+      </details>
+    </section>
+
+    <section id="relatedProductsSection" class="related-products hidden" aria-labelledby="relatedProductsTitle">
+      <div class="related-products-heading">
+        <div><p class="eyebrow">JOŠ IZ ISTE KATEGORIJE</p><h2 id="relatedProductsTitle">Slični proizvodi</h2></div>
+        <a id="relatedProductsLink" href="index.html">Pogledaj sve →</a>
+      </div>
+      <div id="relatedProductsGrid" class="related-products-grid"></div>
     </section>
   </main>
   <script src="cart-store.js?v=7"></script>
-  <script src="product.js?v=17"></script>
+  <script src="product.js?v=21"></script>
 </body>
 </html>

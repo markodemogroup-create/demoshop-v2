@@ -35,6 +35,11 @@ const elements = {
   productPrintMethods: document.getElementById("productPrintMethods"),
   productDocumentsSection: document.getElementById("productDocumentsSection"),
   productDocuments: document.getElementById("productDocuments"),
+  productMeasurementsSection: document.getElementById("productMeasurementsSection"),
+  productMeasurements: document.getElementById("productMeasurements"),
+  relatedProductsSection: document.getElementById("relatedProductsSection"),
+  relatedProductsGrid: document.getElementById("relatedProductsGrid"),
+  relatedProductsLink: document.getElementById("relatedProductsLink"),
 };
 
 let product;
@@ -115,6 +120,15 @@ function escapeHtml(value) {
   })[character]);
 }
 
+const DISPLAY_COLOR_WORDS = /^(crn|crna|crni|crno|crne|bel|bela|beli|belo|bele|bijel|bijela|plav|plava|plavi|plavo|crven|crvena|crveni|crveno|zelen|zelena|zeleni|zeleno|žut|žuta|žuti|žuto|zut|zuta|zuti|zuto|siv|siva|sivi|sivo|roze|roza|pink|narandžast|narandžasta|narandzast|narandzasta|ljubičast|ljubičasta|ljubicast|ljubicasta|braon|teget|bež|bez|bordo|tirkiz|tirkizna|ciklama|lila|srebrn|srebrna|zlatn|zlatna|transparentan|transparentna)$/i;
+
+function productDisplayName(value) {
+  const parts = String(value || "").split(",").map(part => part.trim()).filter(Boolean);
+  const title = parts.shift() || "Bez naziva";
+  while (parts.length && DISPLAY_COLOR_WORDS.test(parts[parts.length - 1])) parts.pop();
+  return { title, description: parts.join(", ") };
+}
+
 function specRows(rows) {
   return rows.filter(([, value]) => value !== null && value !== undefined && value !== "")
     .map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("");
@@ -165,6 +179,39 @@ function renderProductDocuments(detail) {
   }).join("");
 }
 
+function normalizedInfoLabel(value) {
+  return String(value || "").trim().toLocaleLowerCase("sr-Latn").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function isMeasurementLabel(value) {
+  return /(mera|mere|merna|dimenz|size|sizes|measurement|chest|body length|width|height|duzina|sirina|visina|precnik|zapremin|obim)/i.test(normalizedInfoLabel(value));
+}
+
+function renderProductMeasurements(detail) {
+  const specificationItems = (detail?.specifications || []).filter(item => isMeasurementLabel(item?.name));
+  const documentItems = [
+    ...(detail?.documents || []),
+    ...(detail?.certificates || []),
+  ].filter(item => isMeasurementLabel(item?.name || item?.fileName || item?.value));
+
+  const rows = specificationItems.map(item => `<div><span>${escapeHtml(item.name)}</span><strong>${escapeHtml(item.value)}</strong></div>`).join("");
+  const documents = documentItems.map((item, index) => {
+    const label = item.name || item.fileName || item.value || `Tabela mera ${index + 1}`;
+    const url = safeDocumentUrl(item);
+    if (!url) return "";
+    const isImage = /\.(png|jpe?g|webp|gif)(?:\?|$)/i.test(url);
+    return isImage
+      ? `<figure class="measurement-image"><img src="${escapeHtml(url)}" alt="${escapeHtml(label)}" loading="lazy"><figcaption>${escapeHtml(label)}</figcaption></figure>`
+      : `<a class="measurement-document" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"><strong>${escapeHtml(label)}</strong><span>Otvori tabelu mera ↗</span></a>`;
+  }).join("");
+
+  const hasMeasurements = Boolean(rows || documents);
+  elements.productMeasurementsSection?.classList.toggle("hidden", !hasMeasurements);
+  if (elements.productMeasurements) {
+    elements.productMeasurements.innerHTML = `${rows ? `<div class="measurement-rows">${rows}</div>` : ""}${documents}`;
+  }
+}
+
 function renderProductInformation(detail) {
   const model = detail?.model || {};
   elements.productDescription.textContent = model.description || "";
@@ -211,6 +258,7 @@ function renderProductInformation(detail) {
     : "";
   elements.productPrintMethodsBlock.classList.toggle("hidden", printMethods.length === 0);
   renderProductDocuments(detail);
+  renderProductMeasurements(detail);
 
   const hasInfo = Boolean(model.description || model.descriptionLong || specificationRows.length);
   elements.productExtra.classList.toggle("hidden", !hasInfo);
@@ -408,6 +456,55 @@ async function renderColors(colors = []) {
   });
 }
 
+async function loadRelatedProducts() {
+  if (!product?.category || !elements.relatedProductsGrid) return;
+
+  try {
+    const query = new URLSearchParams({ page: "1", limit: "8", category: product.category });
+    if (product.subCategory) query.set("subCategory", product.subCategory);
+    const response = await fetch(`${API_BASE}/products-grouped?${query}`, { headers: { Accept: "application/json" } });
+    if (!response.ok) return;
+    const data = await response.json();
+    const related = (Array.isArray(data.products) ? data.products : [])
+      .filter(item => String(item.modelCode || "") !== String(product.modelCode || ""))
+      .slice(0, 4);
+    if (!related.length) return;
+
+    const allLink = new URL("index.html", window.location.href);
+    allLink.searchParams.set("category", product.category);
+    if (product.subCategory) allLink.searchParams.set("subCategory", product.subCategory);
+    elements.relatedProductsLink.href = allLink.href;
+
+    elements.relatedProductsGrid.innerHTML = related.map((item, index) => {
+      const display = productDisplayName(item.name);
+      const model = item.modelCode || "";
+      const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
+      const href = `product.html?model=${encodeURIComponent(model)}&v=21`;
+      const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
+      const hover = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_090.webp` : "";
+      return `<article class="related-product-card" data-index="${index}" data-detail-id="${escapeHtml(item.representativeVariantId || "")}">
+        <a class="related-product-media" href="${href}">
+          ${image ? `<img class="related-product-primary" src="${image}" alt="${escapeHtml(display.title)}" loading="lazy">` : ""}
+          ${hover ? `<img class="related-product-hover" src="${hover}" alt="" loading="lazy" onerror="this.remove()">` : ""}
+        </a>
+        <div><small>Model ${escapeHtml(model)}</small><h3><a href="${href}">${escapeHtml(display.title)}</a></h3>${display.description ? `<p>${escapeHtml(display.description)}</p>` : ""}<strong class="related-product-price">Učitavanje…</strong></div>
+      </article>`;
+    }).join("");
+
+    elements.relatedProductsSection.classList.remove("hidden");
+    const cards = [...elements.relatedProductsGrid.querySelectorAll(".related-product-card")];
+    const details = await mapWithConcurrency(related, 2, item => getVariantDetail(item.representativeVariantId));
+    cards.forEach((card, index) => {
+      const detail = details[index];
+      card.querySelector(".related-product-price").textContent = formatPrice(detail?.price);
+      const primary = card.querySelector(".related-product-primary");
+      if (primary && detail?.image) primary.onerror = () => { primary.onerror = null; primary.src = detail.image; };
+    });
+  } catch (error) {
+    console.error("Slični proizvodi nisu dostupni", error);
+  }
+}
+
 async function loadProduct() {
   if (!requestedModel) return showMessage("Nedostaje model proizvoda u adresi.");
   showMessage("Učitavanje proizvoda…");
@@ -421,9 +518,10 @@ async function loadProduct() {
     if (!data.success || !data.product) throw new Error(data.error || "Proizvod nije pronađen.");
 
     product = data.product;
-    document.title = `${product.name || product.modelCode} — DemoShop`;
+    const display = productDisplayName(product.name);
+    document.title = `${display.title || product.modelCode} — DemoShop`;
     elements.breadcrumb.textContent = [product.category, product.subCategory].filter(Boolean).join(" / ");
-    elements.name.textContent = product.name || "Bez naziva";
+    elements.name.textContent = display.title;
     elements.model.textContent = product.modelCode || requestedModel;
     renderColors(product.colors || []);
     elements.detail.classList.remove("hidden");
@@ -431,6 +529,7 @@ async function loadProduct() {
 
     const initialColor = product.colors?.find(color => String(color.colorCode ?? "") === String(requestedShade ?? "")) || product.colors?.[0];
     if (initialColor) selectColor(initialColor.colorCode, false);
+    loadRelatedProducts();
   } catch (error) {
     showMessage("Proizvod trenutno nije moguće učitati. Pokušajte ponovo.");
     console.error(error);
