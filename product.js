@@ -12,6 +12,7 @@ const elements = {
   galleryImagesButton: document.getElementById("galleryImagesButton"),
   galleryDimensionsButton: document.getElementById("galleryDimensionsButton"),
   breadcrumb: document.getElementById("breadcrumb"),
+  productBadges: document.getElementById("productBadges"),
   name: document.getElementById("productName"),
   model: document.getElementById("modelCode"),
   price: document.getElementById("price"),
@@ -92,6 +93,23 @@ function formatPrice(value) {
   return Number.isFinite(price) && price > 0
     ? `${price.toLocaleString("sr-RS", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
     : "Cena na upit";
+}
+
+function productBadgesHtml(detail) {
+  const statuses = Array.isArray(detail?.statuses) ? detail.statuses : [];
+  const printMethods = Array.isArray(detail?.printMethods) ? detail.printMethods : [];
+  const statusNames = statuses.map(item => String(item?.name || "").trim());
+  const isNew = Boolean(detail?.badges?.isNew) || statusNames.some(name => /^(novo|new)$/i.test(name));
+  const isSublimation = Boolean(detail?.badges?.isSublimation) || printMethods.some(item =>
+    Number(item?.id) === 381 || /sublimacij/i.test(String(item?.name || ""))
+  );
+  const isHitPrice = Boolean(detail?.badges?.isHitPrice) || Boolean(detail?.discount) || statusNames.some(name => /hit\s*cena/i.test(name));
+
+  return [
+    isNew ? '<span class="status-badge status-new">NEW</span>' : "",
+    isSublimation ? '<span class="status-badge status-sublimation" title="Pogodno za sublimaciju">S</span>' : "",
+    isHitPrice ? '<span class="status-badge status-hit" title="Hit cena">%</span>' : "",
+  ].filter(Boolean).join("");
 }
 
 function formatStock(value) {
@@ -491,6 +509,7 @@ async function loadVariantDetail(variant) {
     if (requestNumber !== variantRequestNumber) return;
 
     loadedVariantDetail = detail;
+    if (elements.productBadges) elements.productBadges.innerHTML = productBadgesHtml(detail);
     elements.variantCode.textContent = detail.code || variant.code || "—";
     elements.price.textContent = formatPrice(detail.price);
     elements.stock.textContent = formatStock(detail.stock);
@@ -641,12 +660,13 @@ async function loadRelatedProducts() {
       const model = item.modelCode || "";
       const imageIds = modelAssetIds(model, item.representativeCode);
       const modelImageId = imageIds[0] || "";
-      const href = `product.html?model=${encodeURIComponent(model)}&v=32`;
+      const href = `product.html?model=${encodeURIComponent(model)}&v=33`;
       const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
       return `<article class="related-product-card" data-index="${index}" data-detail-id="${escapeHtml(item.representativeVariantId || "")}">
         <a class="related-product-media" href="${href}">
           ${image ? `<img class="related-product-primary" src="${image}" alt="${escapeHtml(display.title)}" loading="lazy">` : ""}
           <img class="related-product-hover" alt="" loading="lazy">
+          <span class="product-status-badges" aria-label="Oznake proizvoda"></span>
         </a>
         <div><small>Model ${escapeHtml(model)}</small><h3><a href="${href}">${escapeHtml(display.title)}</a></h3>${display.description ? `<p>${escapeHtml(display.description)}</p>` : ""}<strong class="related-product-price">Učitavanje…</strong></div>
       </article>`;
@@ -658,6 +678,8 @@ async function loadRelatedProducts() {
     cards.forEach((card, index) => {
       const detail = details[index];
       card.querySelector(".related-product-price").textContent = formatPrice(detail?.price);
+      const badges = card.querySelector(".product-status-badges");
+      if (badges) badges.innerHTML = productBadgesHtml(detail);
       const primary = card.querySelector(".related-product-primary");
       if (primary && detail?.image) primary.onerror = () => { primary.onerror = null; primary.src = detail.image; };
       const hover = card.querySelector(".related-product-hover");

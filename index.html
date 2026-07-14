@@ -6,7 +6,7 @@
   <meta name="description" content="DemoShop katalog promotivnih proizvoda sa bojama, veličinama, cenama i lagerom.">
   <title>DemoShop — Katalog promotivnih proizvoda</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
-  <link rel="stylesheet" href="style.css?v=32">
+  <link rel="stylesheet" href="style.css?v=33">
   <link rel="stylesheet" href="catalog-taxonomy.css?v=13">
 </head>
 <body>
@@ -94,6 +94,23 @@
       </div>
     </section>
 
+    <section id="noviteti" class="home-new-products" aria-labelledby="newProductsTitle">
+      <div class="container">
+        <div class="new-products-heading">
+          <div>
+            <p class="eyebrow">SVEŽE IZ KATALOGA</p>
+            <h2 id="newProductsTitle">Noviteti</h2>
+          </div>
+          <div class="new-products-controls" aria-label="Pomeranje noviteta">
+            <button id="newProductsPrev" type="button" aria-label="Prethodni noviteti">←</button>
+            <button id="newProductsNext" type="button" aria-label="Sledeći noviteti">→</button>
+          </div>
+        </div>
+        <p id="newProductsMessage" class="new-products-message">Učitavanje najnovijih proizvoda…</p>
+        <div id="newProductsGrid" class="new-products-track" aria-live="polite"></div>
+      </div>
+    </section>
+
     <section class="container catalog-shell">
       <form id="searchForm" class="search-panel" role="search">
         <label for="searchInput">Pretraga kataloga</label>
@@ -129,6 +146,6 @@
   <footer class="site-footer"><div class="container">DemoShop · Demo Group katalog · Podaci se automatski osvežavaju</div></footer>
   <script src="cart-store.js?v=7"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=32"></script>
+  <script src="script.js?v=33"></script>
 </body>
 </html>

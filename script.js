@@ -23,6 +23,10 @@ const els = {
   prev: document.getElementById("prevPage"),
   next: document.getElementById("nextPage"),
   paginationText: document.getElementById("paginationText"),
+  newProductsGrid: document.getElementById("newProductsGrid"),
+  newProductsMessage: document.getElementById("newProductsMessage"),
+  newProductsPrev: document.getElementById("newProductsPrev"),
+  newProductsNext: document.getElementById("newProductsNext"),
 };
 
 const state = {
@@ -147,7 +151,7 @@ async function loadSearchSuggestions() {
       els.searchSuggestions.innerHTML = products.map((product, index) => {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
-        const href = `product.html?model=${encodeURIComponent(model)}&v=32`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=33`;
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
           <img class="search-suggestion-image" data-suggestion-index="${index}" alt="">
@@ -225,11 +229,35 @@ function formatPrice(value) {
     : "Cena na upit";
 }
 
+function productBadgeState(detail) {
+  const statuses = Array.isArray(detail?.statuses) ? detail.statuses : [];
+  const printMethods = Array.isArray(detail?.printMethods) ? detail.printMethods : [];
+  const statusNames = statuses.map(item => String(item?.name || "").trim());
+  const printNames = printMethods.map(item => String(item?.name || "").trim());
+
+  return {
+    isNew: Boolean(detail?.badges?.isNew) || statusNames.some(name => /^(novo|new)$/i.test(name)),
+    isSublimation: Boolean(detail?.badges?.isSublimation) || printMethods.some((item, index) =>
+      Number(item?.id) === 381 || /sublimacij/i.test(printNames[index])
+    ),
+    isHitPrice: Boolean(detail?.badges?.isHitPrice) || Boolean(detail?.discount) || statusNames.some(name => /hit\s*cena/i.test(name)),
+  };
+}
+
+function productBadgesHtml(detail) {
+  const badges = productBadgeState(detail);
+  return [
+    badges.isNew ? '<span class="status-badge status-new">NEW</span>' : "",
+    badges.isSublimation ? '<span class="status-badge status-sublimation" title="Pogodno za sublimaciju">S</span>' : "",
+    badges.isHitPrice ? '<span class="status-badge status-hit" title="Hit cena">%</span>' : "",
+  ].filter(Boolean).join("");
+}
+
 function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const imageIds = modelAssetIds(model, product.representativeCode);
   const modelImageId = imageIds[0] || "";
-  const href = `product.html?model=${encodeURIComponent(model)}&v=32`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=33`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
 
@@ -241,6 +269,7 @@ function cardTemplate(product, index) {
           <img class="card-image card-image-primary" alt="" loading="lazy">
           <img class="card-image card-image-hover" alt="" loading="lazy" aria-hidden="true">
           <span class="card-badge">${product.colorCount > 1 ? `${product.colorCount} boja` : "1 varijanta"}</span>
+          <span class="product-status-badges" aria-label="Oznake proizvoda"></span>
         </div>
       </a>
       <div class="card-content">
@@ -320,6 +349,8 @@ function applyCardDetail(card, detail) {
     }
   }
   price.textContent = formatPrice(detail?.price);
+  const badges = card.querySelector(".product-status-badges");
+  if (badges) badges.innerHTML = productBadgesHtml(detail);
 
   const detailImages = [...new Set([
     detail?.image,
@@ -365,23 +396,50 @@ function applyCardDetail(card, detail) {
   }
 }
 
-async function enrichCards(requestId) {
-  const cards = [...els.grid.querySelectorAll(".product-card")];
+async function enrichCards(requestId, root = els.grid) {
+  const isCurrent = () => requestId === null || requestId === state.requestId;
+  const cards = [...root.querySelectorAll(".product-card")];
   let cursor = 0;
 
   async function worker() {
-    while (cursor < cards.length && requestId === state.requestId) {
+    while (cursor < cards.length && isCurrent()) {
       const card = cards[cursor++];
       try {
         const detail = await fetchVariantDetail(card.dataset.detailId);
-        if (requestId === state.requestId) applyCardDetail(card, detail);
+        if (isCurrent()) applyCardDetail(card, detail);
       } catch {
-        if (requestId === state.requestId) applyCardDetail(card, null);
+        if (isCurrent()) applyCardDetail(card, null);
       }
     }
   }
 
   await Promise.all(Array.from({ length: DETAIL_CONCURRENCY }, worker));
+}
+
+async function loadNewProducts() {
+  if (!els.newProductsGrid) return;
+
+  try {
+    const response = await fetch(`${API_BASE}/new-products?limit=12`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || "Noviteti nisu dostupni.");
+
+    const products = Array.isArray(data.products) ? data.products : [];
+    if (!products.length) {
+      els.newProductsMessage.textContent = "Novi proizvodi se trenutno ažuriraju.";
+      return;
+    }
+
+    els.newProductsMessage.classList.add("hidden");
+    els.newProductsGrid.innerHTML = products.map(cardTemplate).join("");
+    enrichCards(null, els.newProductsGrid);
+  } catch (error) {
+    els.newProductsMessage.textContent = "Noviteti će se pojaviti nakon sledećeg osvežavanja kataloga.";
+    console.error("Noviteti nisu dostupni", error);
+  }
 }
 
 function closeCategoriesMenu() {
@@ -682,5 +740,14 @@ els.next?.addEventListener("click", () => {
   if (state.page < state.totalPages) { state.page += 1; loadProducts(); window.scrollTo({ top: 260, behavior: "smooth" }); }
 });
 
+els.newProductsPrev?.addEventListener("click", () => {
+  els.newProductsGrid?.scrollBy({ left: -620, behavior: "smooth" });
+});
+
+els.newProductsNext?.addEventListener("click", () => {
+  els.newProductsGrid?.scrollBy({ left: 620, behavior: "smooth" });
+});
+
 loadCategories();
+loadNewProducts();
 loadProducts();
