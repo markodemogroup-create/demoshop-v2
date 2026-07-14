@@ -131,6 +131,23 @@ function productDisplayName(value) {
   return { title, description: parts.join(", ") };
 }
 
+function modelAssetIds(...values) {
+  const ids = [];
+
+  values.filter(Boolean).forEach(value => {
+    const code = String(value).trim().replace(/-(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|[2-9]XL|[0-9]{2,3})$/i, "");
+    const parts = code.split(".").filter(Boolean);
+
+    if (parts.length >= 3 && /^\d{1,4}$/.test(parts[parts.length - 1])) {
+      ids.push(parts.slice(0, -1).join("").replace(/[^a-zA-Z0-9]/g, ""));
+    }
+
+    ids.push(code.replace(/[^a-zA-Z0-9]/g, ""));
+  });
+
+  return [...new Set(ids.filter(Boolean))];
+}
+
 function specRows(rows) {
   return rows.filter(([, value]) => value !== null && value !== undefined && value !== "")
     .map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("");
@@ -521,8 +538,9 @@ async function loadRelatedProducts() {
     elements.relatedProductsGrid.innerHTML = related.map((item, index) => {
       const display = productDisplayName(item.name);
       const model = item.modelCode || "";
-      const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
-      const href = `product.html?model=${encodeURIComponent(model)}&v=25`;
+      const imageIds = modelAssetIds(model, item.representativeCode);
+      const modelImageId = imageIds[0] || "";
+      const href = `product.html?model=${encodeURIComponent(model)}&v=26`;
       const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
       return `<article class="related-product-card" data-index="${index}" data-detail-id="${escapeHtml(item.representativeVariantId || "")}">
         <a class="related-product-media" href="${href}">
@@ -547,12 +565,13 @@ async function loadRelatedProducts() {
         detail?.image,
         ...(Array.isArray(detail?.images) ? detail.images : []),
       ].filter(Boolean))];
-      const modelImageId = String(related[index]?.modelCode || "").replace(/[^a-zA-Z0-9]/g, "");
-      const marketingHoverUrl = modelImageId
-        ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_090.webp`
-        : "";
+      const relatedProduct = related[index] || {};
+      const relatedImageIds = modelAssetIds(relatedProduct.modelCode, relatedProduct.representativeCode);
+      const marketingHoverUrls = relatedImageIds.map(id =>
+        `https://apiv2.promosolution.services/content/ModelItem/${id}_090.webp`
+      );
       const hoverCandidates = [...new Set([
-        marketingHoverUrl,
+        ...marketingHoverUrls,
         ...actualImages.filter(url => url !== primaryUrl),
       ].filter(Boolean))];
       if (hover && hoverCandidates.length) {

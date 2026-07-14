@@ -86,6 +86,23 @@ function productDisplayName(value) {
   return { title, description: parts.join(", ") };
 }
 
+function modelAssetIds(...values) {
+  const ids = [];
+
+  values.filter(Boolean).forEach(value => {
+    const code = String(value).trim().replace(/-(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|[2-9]XL|[0-9]{2,3})$/i, "");
+    const parts = code.split(".").filter(Boolean);
+
+    if (parts.length >= 3 && /^\d{1,4}$/.test(parts[parts.length - 1])) {
+      ids.push(parts.slice(0, -1).join("").replace(/[^a-zA-Z0-9]/g, ""));
+    }
+
+    ids.push(code.replace(/[^a-zA-Z0-9]/g, ""));
+  });
+
+  return [...new Set(ids.filter(Boolean))];
+}
+
 function highlightSearchMatch(value, query) {
   const text = String(value || "");
   const needle = String(query || "").trim();
@@ -128,7 +145,7 @@ async function loadSearchSuggestions() {
       els.searchSuggestions.innerHTML = products.map((product, index) => {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
-        const href = `product.html?model=${encodeURIComponent(model)}&v=25`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=26`;
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
           <img class="search-suggestion-image" data-suggestion-index="${index}" alt="" loading="lazy" hidden>
@@ -178,13 +195,13 @@ async function hydrateSearchSuggestionImages(products, requestId) {
     const image = els.searchSuggestions?.querySelector(`[data-suggestion-index="${index}"]`);
     if (!image) return;
 
-    const modelImageId = String(product.modelCode || "").replace(/[^a-zA-Z0-9]/g, "");
-    const modelImage = modelImageId
-      ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp`
-      : "";
+    const imageIds = modelAssetIds(product.modelCode, product.representativeCode);
+    const modelImages = imageIds.map(id =>
+      `https://apiv2.promosolution.services/content/ModelItem/${id}_000.webp`
+    );
 
     loadImageFromCandidates(image, [
-      modelImage,
+      ...modelImages,
       detail?.image,
       ...(Array.isArray(detail?.images) ? detail.images : []),
     ]);
@@ -206,13 +223,14 @@ function formatPrice(value) {
 
 function cardTemplate(product, index) {
   const model = product.modelCode || "";
-  const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
-  const href = `product.html?model=${encodeURIComponent(model)}&v=25`;
+  const imageIds = modelAssetIds(model, product.representativeCode);
+  const modelImageId = imageIds[0] || "";
+  const href = `product.html?model=${encodeURIComponent(model)}&v=26`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
 
   return `
-    <article class="product-card" data-detail-id="${escapeHtml(product.representativeVariantId || "")}" data-model-image-id="${escapeHtml(modelImageId)}" data-index="${index}">
+    <article class="product-card" data-detail-id="${escapeHtml(product.representativeVariantId || "")}" data-model-image-id="${escapeHtml(modelImageId)}" data-model-image-ids="${escapeHtml(imageIds.join(","))}" data-index="${index}">
       <a class="card-image-link" href="${href}" aria-label="Otvori ${escapeHtml(product.name || model)}">
         <div class="card-media">
           <div class="image-skeleton"></div>
@@ -303,11 +321,14 @@ function applyCardDetail(card, detail) {
     detail?.image,
     ...(Array.isArray(detail?.images) ? detail.images : []),
   ].filter(Boolean))];
-  const marketingHoverUrl = modelImageId
-    ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_090.webp`
-    : "";
+  const modelImageIds = String(card.dataset.modelImageIds || modelImageId)
+    .split(",")
+    .filter(Boolean);
+  const marketingHoverUrls = modelImageIds.map(id =>
+    `https://apiv2.promosolution.services/content/ModelItem/${id}_090.webp`
+  );
   const hoverCandidates = [...new Set([
-    marketingHoverUrl,
+    ...marketingHoverUrls,
     ...detailImages.filter(url => url !== modelImageUrl),
   ].filter(Boolean))];
 
