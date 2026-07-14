@@ -147,7 +147,7 @@ async function loadSearchSuggestions() {
       els.searchSuggestions.innerHTML = products.map((product, index) => {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
-        const href = `product.html?model=${encodeURIComponent(model)}&v=31`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=32`;
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
           <img class="search-suggestion-image" data-suggestion-index="${index}" alt="">
@@ -229,7 +229,7 @@ function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const imageIds = modelAssetIds(model, product.representativeCode);
   const modelImageId = imageIds[0] || "";
-  const href = `product.html?model=${encodeURIComponent(model)}&v=31`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=32`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
 
@@ -399,11 +399,26 @@ function applyCategory(category, subCategory = "", options = {}) {
   els.searchInput.value = state.search;
   closeCategoriesMenu();
   loadProducts();
-  window.scrollTo({ top: 300, behavior: "smooth" });
+  const catalogTop = els.searchForm
+    ? els.searchForm.getBoundingClientRect().top + window.scrollY - 145
+    : 300;
+  window.scrollTo({ top: Math.max(0, catalogTop), behavior: "smooth" });
 }
 
 function formatMenuCount(value) {
   return Number(value || 0).toLocaleString("sr-RS");
+}
+
+function updateHomeHighlightCounts(categories) {
+  document.querySelectorAll("[data-highlight-count]").forEach(element => {
+    const code = element.dataset.highlightCount || "";
+    const categoryCode = code.split(" - ")[0];
+    const category = categories.find(item => item.code === categoryCode);
+    const source = code.includes(" - ")
+      ? category?.subCategories?.find(item => item.code === code)
+      : category;
+    element.textContent = source ? formatMenuCount(source.count) : "—";
+  });
 }
 
 function renderCategoriesMenu() {
@@ -495,6 +510,7 @@ async function loadCategories() {
     menuSelection.categoryCode = state.category;
     menuSelection.subCategoryCode = state.subCategory;
     renderCategoriesMenu();
+    updateHomeHighlightCounts(menuCategories);
   } catch (error) {
     console.error("Kategorije nisu učitane", error);
   }
@@ -610,6 +626,14 @@ els.categoriesToggle?.addEventListener("click", () => {
 
 document.querySelectorAll(".quick-category").forEach(button => {
   button.addEventListener("click", () => applyCategory(button.dataset.category));
+});
+
+document.querySelectorAll(".highlight-card").forEach(button => {
+  button.addEventListener("click", () => {
+    applyCategory(button.dataset.highlightCategory || "", button.dataset.highlightSubcategory || "", {
+      label: button.dataset.highlightLabel || "",
+    });
+  });
 });
 
 els.categoriesGrid?.addEventListener("click", event => {

@@ -6,7 +6,7 @@
   <meta name="description" content="DemoShop katalog promotivnih proizvoda sa bojama, veličinama, cenama i lagerom.">
   <title>DemoShop — Katalog promotivnih proizvoda</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
-  <link rel="stylesheet" href="style.css?v=31">
+  <link rel="stylesheet" href="style.css?v=32">
   <link rel="stylesheet" href="catalog-taxonomy.css?v=13">
 </head>
 <body>
@@ -42,8 +42,55 @@
           <p class="eyebrow">DEMO GROUP · PROMOTIVNI PROIZVODI</p>
           <h1>Pronađite proizvod za vaš brend.</h1>
           <p class="hero-copy">Jedan model, sve dostupne boje i veličine. Cena i lager proveravaju se direktno za izabranu varijantu.</p>
+          <div class="hero-actions">
+            <a class="hero-action-primary" href="#izdvojeno">Pogledaj izdvojeno <span aria-hidden="true">↓</span></a>
+            <a class="hero-action-secondary" href="#searchForm">Pretraži katalog</a>
+          </div>
         </div>
         <div class="hero-badge"><strong id="heroTotal">1.756</strong><span>grupisanih modela</span></div>
+      </div>
+    </section>
+
+    <section id="izdvojeno" class="home-highlights" aria-labelledby="highlightsTitle">
+      <div class="container">
+        <div class="highlights-heading">
+          <div>
+            <p class="eyebrow">BRZI IZBOR</p>
+            <h2 id="highlightsTitle">Izdvojene kolekcije</h2>
+          </div>
+          <p>Tri najtraženije grupe proizvoda, povezane direktno sa aktuelnim katalogom.</p>
+        </div>
+        <div class="highlight-grid">
+          <button class="highlight-card highlight-textile" type="button"
+            data-highlight-category="TX" data-highlight-subcategory="TX - 12" data-highlight-label="Majice, duksevi i jakne">
+            <span class="highlight-kicker">Za tim, događaj i svakodnevni rad</span>
+            <strong>Tekstil</strong>
+            <span class="highlight-description">Majice, duksevi i jakne</span>
+            <small><b data-highlight-count="TX - 12">—</b> modela u katalogu</small>
+            <span class="highlight-link">Pogledaj kolekciju <b aria-hidden="true">→</b></span>
+            <span class="highlight-art" aria-hidden="true"><i></i><i></i><i></i></span>
+          </button>
+
+          <button class="highlight-card highlight-home" type="button"
+            data-highlight-category="KS" data-highlight-subcategory="KS - 01" data-highlight-label="Šolje">
+            <span class="highlight-kicker">Pokloni koji ostaju u upotrebi</span>
+            <strong>Kućni program</strong>
+            <span class="highlight-description">Šolje i praktični promo proizvodi</span>
+            <small><b data-highlight-count="KS - 01">—</b> modela u kolekciji šolja</small>
+            <span class="highlight-link">Pogledaj kolekciju <b aria-hidden="true">→</b></span>
+            <span class="highlight-art" aria-hidden="true"><i></i><i></i><i></i></span>
+          </button>
+
+          <button class="highlight-card highlight-tech" type="button"
+            data-highlight-category="TE" data-highlight-label="Tehnologija">
+            <span class="highlight-kicker">Savremeni pokloni za svaki sto</span>
+            <strong>Tehnologija</strong>
+            <span class="highlight-description">Punjači, audio i pametni gedžeti</span>
+            <small><b data-highlight-count="TE">—</b> modela u katalogu</small>
+            <span class="highlight-link">Pogledaj kolekciju <b aria-hidden="true">→</b></span>
+            <span class="highlight-art" aria-hidden="true"><i></i><i></i><i></i></span>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -82,6 +129,6 @@
   <footer class="site-footer"><div class="container">DemoShop · Demo Group katalog · Podaci se automatski osvežavaju</div></footer>
   <script src="cart-store.js?v=7"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=31"></script>
+  <script src="script.js?v=32"></script>
 </body>
 </html>
