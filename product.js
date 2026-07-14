@@ -522,7 +522,7 @@ async function loadRelatedProducts() {
       const display = productDisplayName(item.name);
       const model = item.modelCode || "";
       const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
-      const href = `product.html?model=${encodeURIComponent(model)}&v=24`;
+      const href = `product.html?model=${encodeURIComponent(model)}&v=25`;
       const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
       return `<article class="related-product-card" data-index="${index}" data-detail-id="${escapeHtml(item.representativeVariantId || "")}">
         <a class="related-product-media" href="${href}">
@@ -547,11 +547,27 @@ async function loadRelatedProducts() {
         detail?.image,
         ...(Array.isArray(detail?.images) ? detail.images : []),
       ].filter(Boolean))];
-      const hoverUrl = actualImages.find(url => url !== primaryUrl) || "";
-      if (hover && hoverUrl) {
-        hover.onload = () => card.classList.add("has-related-hover");
-        hover.onerror = () => hover.remove();
-        hover.src = hoverUrl;
+      const modelImageId = String(related[index]?.modelCode || "").replace(/[^a-zA-Z0-9]/g, "");
+      const marketingHoverUrl = modelImageId
+        ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_090.webp`
+        : "";
+      const hoverCandidates = [...new Set([
+        marketingHoverUrl,
+        ...actualImages.filter(url => url !== primaryUrl),
+      ].filter(Boolean))];
+      if (hover && hoverCandidates.length) {
+        let candidateIndex = 0;
+        const tryNextHoverImage = () => {
+          const nextUrl = hoverCandidates[candidateIndex++];
+          if (!nextUrl) {
+            hover.remove();
+            return;
+          }
+          hover.onload = () => card.classList.add("has-related-hover");
+          hover.onerror = tryNextHoverImage;
+          hover.src = nextUrl;
+        };
+        tryNextHoverImage();
       } else {
         hover?.remove();
       }

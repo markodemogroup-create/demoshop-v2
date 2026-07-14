@@ -128,7 +128,7 @@ async function loadSearchSuggestions() {
       els.searchSuggestions.innerHTML = products.map((product, index) => {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
-        const href = `product.html?model=${encodeURIComponent(model)}&v=24`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=25`;
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
           <img class="search-suggestion-image" data-suggestion-index="${index}" alt="" loading="lazy" hidden>
@@ -207,7 +207,7 @@ function formatPrice(value) {
 function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const modelImageId = model.replace(/[^a-zA-Z0-9]/g, "");
-  const href = `product.html?model=${encodeURIComponent(model)}&v=24`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=25`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
 
@@ -303,18 +303,36 @@ function applyCardDetail(card, detail) {
     detail?.image,
     ...(Array.isArray(detail?.images) ? detail.images : []),
   ].filter(Boolean))];
-  const hoverUrl = detailImages.find(url => url !== modelImageUrl) || "";
+  const marketingHoverUrl = modelImageId
+    ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_090.webp`
+    : "";
+  const hoverCandidates = [...new Set([
+    marketingHoverUrl,
+    ...detailImages.filter(url => url !== modelImageUrl),
+  ].filter(Boolean))];
 
-  if (hoverImage && hoverUrl) {
+  if (hoverImage && hoverCandidates.length) {
     const loadHoverImage = () => {
       if (hoverImage.dataset.loaded) return;
       hoverImage.dataset.loaded = "true";
-      hoverImage.onload = () => {
-        hoverImage.classList.add("loaded");
-        media?.classList.add("has-hover-image");
+      let candidateIndex = 0;
+
+      const tryNextHoverImage = () => {
+        const nextUrl = hoverCandidates[candidateIndex++];
+        if (!nextUrl) {
+          media?.classList.remove("has-hover-image");
+          return;
+        }
+
+        hoverImage.onload = () => {
+          hoverImage.classList.add("loaded");
+          media?.classList.add("has-hover-image");
+        };
+        hoverImage.onerror = tryNextHoverImage;
+        hoverImage.src = nextUrl;
       };
-      hoverImage.onerror = () => media?.classList.remove("has-hover-image");
-      hoverImage.src = hoverUrl;
+
+      tryNextHoverImage();
     };
 
     card.addEventListener("pointerenter", loadHoverImage, { once: true });
