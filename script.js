@@ -83,7 +83,8 @@ function cardTemplate(product, index) {
       <a class="card-image-link" href="${href}" aria-label="Otvori ${escapeHtml(product.name || model)}">
         <div class="card-media">
           <div class="image-skeleton"></div>
-          <img class="card-image" alt="" loading="lazy">
+          <img class="card-image card-image-primary" alt="" loading="lazy">
+          <img class="card-image card-image-hover" alt="" loading="lazy" aria-hidden="true">
           <span class="card-badge">${product.colorCount > 1 ? `${product.colorCount} boja` : "1 varijanta"}</span>
         </div>
       </a>
@@ -115,7 +116,9 @@ async function fetchVariantDetail(id) {
 
 function applyCardDetail(card, detail) {
   const skeleton = card.querySelector(".image-skeleton");
-  const image = card.querySelector(".card-image");
+  const image = card.querySelector(".card-image-primary");
+  const hoverImage = card.querySelector(".card-image-hover");
+  const media = card.querySelector(".card-media");
   const price = card.querySelector(".card-price");
   skeleton?.remove();
 
@@ -136,6 +139,26 @@ function applyCardDetail(card, detail) {
     }
   }
   price.textContent = formatPrice(detail?.price);
+
+  const primaryUrl = detail?.image || "";
+  const hoverUrl = [...new Set(Array.isArray(detail?.images) ? detail.images : [])]
+    .find(url => url && url.split("?")[0] !== primaryUrl.split("?")[0]);
+
+  if (hoverImage && hoverUrl) {
+    const loadHoverImage = () => {
+      if (hoverImage.dataset.loaded) return;
+      hoverImage.dataset.loaded = "true";
+      hoverImage.onload = () => {
+        hoverImage.classList.add("loaded");
+        media?.classList.add("has-hover-image");
+      };
+      hoverImage.onerror = () => media?.classList.remove("has-hover-image");
+      hoverImage.src = hoverUrl;
+    };
+
+    card.addEventListener("pointerenter", loadHoverImage, { once: true });
+    card.addEventListener("focusin", loadHoverImage, { once: true });
+  }
 }
 
 async function enrichCards(requestId) {
