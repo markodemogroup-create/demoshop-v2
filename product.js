@@ -394,21 +394,22 @@ async function prepareDimensionImage(detail) {
     const titleCase = words
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(" ");
+    const collapsed = words.join("");
+    const collapsedTitle = collapsed
+      ? collapsed.charAt(0).toUpperCase() + collapsed.slice(1).toLowerCase()
+      : "";
 
-    [name, titleCase, name.replace(/\s+/g, "_")].forEach(value => {
+    [collapsedTitle, titleCase, name, collapsed, name.replace(/\s+/g, "_")].forEach(value => {
       if (value && !customNames.includes(value)) customNames.push(value);
     });
   });
 
   const candidates = [
-    ...ids.flatMap(id => [
-      `${assetRoot}${id}_101.webp`,
-      `${assetRoot}${id}_101.jpg`
-    ]),
-    ...customNames.flatMap(name => [
-      `${assetRoot}${encodeURIComponent(name)}_dim.jpg`,
-      `${assetRoot}${encodeURIComponent(name)}_dim.webp`
-    ])
+    ...ids.map(id => `${assetRoot}${id}_101.webp`),
+    ...customNames.map(name => `${assetRoot}${encodeURIComponent(name)}_dim.webp`),
+    ...customNames.map(name => `${assetRoot}${encodeURIComponent(name)}_dim.jpg`),
+    ...ids.map(id => `${assetRoot}${id}_101.jpg`),
+    ...customNames.map(name => `${assetRoot}${encodeURIComponent(name)}_dim.png`)
   ];
   const found = await firstWorkingImage(candidates);
   if (requestNumber !== dimensionProbeNumber || !found) return;
@@ -640,7 +641,7 @@ async function loadRelatedProducts() {
       const model = item.modelCode || "";
       const imageIds = modelAssetIds(model, item.representativeCode);
       const modelImageId = imageIds[0] || "";
-      const href = `product.html?model=${encodeURIComponent(model)}&v=29`;
+      const href = `product.html?model=${encodeURIComponent(model)}&v=30`;
       const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
       return `<article class="related-product-card" data-index="${index}" data-detail-id="${escapeHtml(item.representativeVariantId || "")}">
         <a class="related-product-media" href="${href}">
