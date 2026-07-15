@@ -397,7 +397,7 @@ async function fetchVariantDetail(id) {
   if (!id) return null;
   if (variantDetailCache.has(id)) return variantDetailCache.get(id);
 
-  const detailPromise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=46`, {
+  const detailPromise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=47`, {
     headers: { Accept: "application/json" },
   })
     .then(async response => {
@@ -698,7 +698,7 @@ async function loadNewProducts() {
   if (!els.newProductsGrid) return;
 
   try {
-    const response = await fetch(`${API_BASE}/new-products?limit=12&v=46`, {
+    const response = await fetch(`${API_BASE}/new-products?limit=12&v=47`, {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -891,7 +891,7 @@ async function loadProducts() {
 
   try {
     const endpoint = state.status
-      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=46`
+      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=47`
       : `${API_BASE}/products-grouped?${params}`;
     const response = await fetch(endpoint, {
       headers: { Accept: "application/json" },
