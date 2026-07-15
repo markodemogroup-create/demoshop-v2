@@ -151,7 +151,7 @@ async function loadSearchSuggestions() {
       els.searchSuggestions.innerHTML = products.map((product, index) => {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
-        const href = `product.html?model=${encodeURIComponent(model)}&v=33`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=34`;
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
           <img class="search-suggestion-image" data-suggestion-index="${index}" alt="">
@@ -253,11 +253,45 @@ function productBadgesHtml(detail) {
   ].filter(Boolean).join("");
 }
 
+function cardStockState(value) {
+  const stock = Number(value);
+
+  if (!Number.isFinite(stock)) {
+    return {
+      className: "unavailable",
+      label: "Stanje nije dostupno",
+      amount: "Pokušajte ponovo",
+    };
+  }
+
+  if (stock <= 0) {
+    return {
+      className: "empty",
+      label: "Trenutno nema na stanju",
+      amount: "0 kom.",
+    };
+  }
+
+  if (stock <= 100) {
+    return {
+      className: "low",
+      label: "Malo na stanju",
+      amount: `${Math.floor(stock).toLocaleString("sr-RS")} kom.`,
+    };
+  }
+
+  return {
+    className: "available",
+    label: "Na stanju",
+    amount: `${Math.floor(stock).toLocaleString("sr-RS")} kom.`,
+  };
+}
+
 function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const imageIds = modelAssetIds(model, product.representativeCode);
   const modelImageId = imageIds[0] || "";
-  const href = `product.html?model=${encodeURIComponent(model)}&v=33`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=34`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
 
@@ -277,6 +311,10 @@ function cardTemplate(product, index) {
         <h2><a href="${href}">${escapeHtml(display.title)}</a></h2>
         ${display.description ? `<p class="card-description">${escapeHtml(display.description)}</p>` : ""}
         <p class="card-code">Model ${escapeHtml(model)}</p>
+        <div class="card-stock card-stock-loading" aria-live="polite">
+          <span class="card-stock-dot" aria-hidden="true"></span>
+          <span><strong>Provera stanja…</strong><small></small></span>
+        </div>
         <div class="card-meta">
           <div><span class="card-price">Učitavanje…</span><small>po komadu</small></div>
           <a class="card-arrow" href="${href}" aria-label="Detalji proizvoda">→</a>
@@ -313,6 +351,7 @@ function applyCardDetail(card, detail) {
   const hoverImage = card.querySelector(".card-image-hover");
   const media = card.querySelector(".card-media");
   const price = card.querySelector(".card-price");
+  const stockElement = card.querySelector(".card-stock");
   skeleton?.remove();
 
   const modelImageId = card.dataset.modelImageId || "";
@@ -349,6 +388,14 @@ function applyCardDetail(card, detail) {
     }
   }
   price.textContent = formatPrice(detail?.price);
+  if (stockElement) {
+    const stockState = cardStockState(detail?.stock);
+    stockElement.className = `card-stock card-stock-${stockState.className}`;
+    const label = stockElement.querySelector("strong");
+    const amount = stockElement.querySelector("small");
+    if (label) label.textContent = stockState.label;
+    if (amount) amount.textContent = stockState.amount;
+  }
   const badges = card.querySelector(".product-status-badges");
   if (badges) badges.innerHTML = productBadgesHtml(detail);
 
