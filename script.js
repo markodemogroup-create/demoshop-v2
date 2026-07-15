@@ -31,6 +31,8 @@ const els = {
   newProductsMessage: document.getElementById("newProductsMessage"),
   newProductsPrev: document.getElementById("newProductsPrev"),
   newProductsNext: document.getElementById("newProductsNext"),
+  refreshCatalog: document.getElementById("refreshCatalog"),
+  refreshCatalogLabel: document.getElementById("refreshCatalogLabel"),
 };
 
 const state = {
@@ -44,6 +46,7 @@ const state = {
   requestId: 0,
   suggestionRequestId: 0,
   suggestionIndex: -1,
+  refreshToken: "",
 };
 
 const variantDetailCache = new Map();
@@ -51,6 +54,19 @@ let heroSlideIndex = 0;
 let heroRotationTimer;
 let menuCategories = [];
 const menuSelection = { categoryCode: "", subCategoryCode: "" };
+
+function freshCatalogEndpoint(url) {
+  if (!state.refreshToken) return url;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}_refresh=${encodeURIComponent(state.refreshToken)}`;
+}
+
+function fetchCatalog(url, options = {}) {
+  return fetch(freshCatalogEndpoint(url), {
+    ...options,
+    cache: state.refreshToken ? "no-store" : (options.cache || "default"),
+  });
+}
 
 const initialUrlParams = new URLSearchParams(window.location.search);
 state.search = initialUrlParams.get("search") || "";
@@ -685,7 +701,7 @@ async function loadNewProducts() {
   if (!els.newProductsGrid) return;
 
   try {
-    const response = await fetch(`${API_BASE}/new-products?limit=12`, {
+    const response = await fetchCatalog(`${API_BASE}/new-products?limit=12`, {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -850,7 +866,7 @@ function renderCategoriesMenu() {
 
 async function loadCategories() {
   try {
-    const response = await fetch(`${API_BASE}/catalog-filters`, { headers: { Accept: "application/json" } });
+    const response = await fetchCatalog(`${API_BASE}/catalog-filters`, { headers: { Accept: "application/json" } });
     if (!response.ok) return;
     const data = await response.json();
     if (!data.success || !Array.isArray(data.categories)) return;
@@ -878,9 +894,9 @@ async function loadProducts() {
 
   try {
     const endpoint = state.status
-      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&limit=32&v=7`
+      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=8`
       : `${API_BASE}/products-grouped?${params}`;
-    const response = await fetch(endpoint, {
+    const response = await fetchCatalog(endpoint, {
       headers: { Accept: "application/json" },
       cache: state.status ? "no-store" : "default",
     });
@@ -889,10 +905,10 @@ async function loadProducts() {
     if (!data.success) throw new Error(data.error || "Katalog trenutno nije dostupan.");
     if (requestId !== state.requestId) return;
 
-    state.page = state.status ? 1 : (data.page || 1);
-    state.totalPages = state.status ? 1 : (data.totalPages || 1);
+    state.page = data.page || 1;
+    state.totalPages = data.totalPages || 1;
     const total = Number(data.totalGroupedCards || 0);
-    const matches = Number(state.status ? data.showing : (data.totalMatchingProducts || 0));
+    const matches = Number(data.totalMatchingProducts || 0);
 
     els.apiStatus.textContent = "Katalog ažuriran";
     if (!state.status) els.heroTotal.textContent = total.toLocaleString("sr-RS");
@@ -901,12 +917,14 @@ async function loadProducts() {
     els.resultsLabel.textContent = state.status ? "proizvoda u kolekciji" : (state.search ? `rezultata za „${state.search}”` : "proizvoda");
     els.activeFilter.classList.toggle("hidden", !(state.category || state.status));
     els.activeFilterName.textContent = filterName || "";
-    els.pageInfo.textContent = state.status ? state.collectionLabel : `Strana ${state.page} od ${state.totalPages}`;
+    els.pageInfo.textContent = state.status
+      ? `${state.collectionLabel} · Strana ${state.page} od ${state.totalPages}`
+      : `Strana ${state.page} od ${state.totalPages}`;
     els.paginationText.textContent = `${state.page} / ${state.totalPages}`;
     els.prev.disabled = !data.hasPreviousPage;
     els.next.disabled = !data.hasNextPage;
     els.clearSearch.classList.toggle("hidden", !state.search);
-    els.pagination?.classList.toggle("hidden", Boolean(state.status));
+    els.pagination?.classList.toggle("hidden", state.totalPages <= 1);
 
     const products = Array.isArray(data.products) ? data.products : [];
     if (!products.length) {
@@ -1064,6 +1082,25 @@ els.newProductsPrev?.addEventListener("click", () => {
 
 els.newProductsNext?.addEventListener("click", () => {
   els.newProductsGrid?.scrollBy({ left: 620, behavior: "smooth" });
+});
+
+els.refreshCatalog?.addEventListener("click", async () => {
+  if (els.refreshCatalog.disabled) return;
+  state.refreshToken = Date.now().toString(36);
+  els.refreshCatalog.disabled = true;
+  els.refreshCatalog.classList.add("is-loading");
+  if (els.refreshCatalogLabel) els.refreshCatalogLabel.textContent = "Osvežavanje…";
+  els.apiStatus.textContent = "Osvežavanje kataloga";
+
+  await Promise.allSettled([
+    loadCategories(),
+    loadNewProducts(),
+    loadProducts(),
+  ]);
+
+  els.refreshCatalog.disabled = false;
+  els.refreshCatalog.classList.remove("is-loading");
+  if (els.refreshCatalogLabel) els.refreshCatalogLabel.textContent = "Osveži katalog";
 });
 
 loadCategories();

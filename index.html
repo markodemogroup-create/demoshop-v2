@@ -16,7 +16,14 @@
         <span class="brand-mark">D</span>
         <span>Demo<span>Shop</span></span>
       </a>
-      <div class="header-note"><span class="status-dot"></span><span id="apiStatus">Povezivanje sa katalogom</span></div>
+      <div class="header-note">
+        <span class="status-dot"></span>
+        <span id="apiStatus">Povezivanje sa katalogom</span>
+        <button id="refreshCatalog" class="catalog-refresh" type="button" aria-label="Osveži katalog">
+          <span class="refresh-icon" aria-hidden="true">↻</span>
+          <span id="refreshCatalogLabel">Osveži katalog</span>
+        </button>
+      </div>
       <a class="cart-link" href="cart.html">Upit <span class="cart-count" data-cart-count>0</span></a>
     </div>
   </header>
@@ -157,6 +164,6 @@
   <footer class="site-footer"><div class="container">DemoShop · Demo Group katalog · Podaci se automatski osvežavaju</div></footer>
   <script src="cart-store.js?v=7"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=41"></script>
+  <script src="script.js?v=42"></script>
 </body>
 </html>
