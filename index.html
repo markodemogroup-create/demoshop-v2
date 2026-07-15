@@ -6,7 +6,7 @@
   <meta name="description" content="DemoShop katalog promotivnih proizvoda sa bojama, veličinama, cenama i lagerom.">
   <title>DemoShop — Katalog promotivnih proizvoda</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
-  <link rel="stylesheet" href="style.css?v=39">
+  <link rel="stylesheet" href="style.css?v=33">
   <link rel="stylesheet" href="catalog-taxonomy.css?v=13">
 </head>
 <body>
@@ -16,14 +16,7 @@
         <span class="brand-mark">D</span>
         <span>Demo<span>Shop</span></span>
       </a>
-      <div class="header-note">
-        <span class="status-dot"></span>
-        <span id="apiStatus">Povezivanje sa katalogom</span>
-        <button id="refreshCatalog" class="catalog-refresh" type="button" aria-label="Osveži katalog">
-          <span class="refresh-icon" aria-hidden="true">↻</span>
-          <span id="refreshCatalogLabel">Osveži katalog</span>
-        </button>
-      </div>
+      <div class="header-note"><span class="status-dot"></span><span id="apiStatus">Povezivanje sa katalogom</span></div>
       <a class="cart-link" href="cart.html">Upit <span class="cart-count" data-cart-count>0</span></a>
     </div>
   </header>
@@ -31,14 +24,6 @@
   <nav class="catalog-nav" aria-label="Glavna navigacija kataloga">
     <div class="container nav-inner">
       <button id="categoriesToggle" class="categories-toggle" type="button" aria-expanded="false" aria-controls="categoriesMenu">Kategorije <span aria-hidden="true">⌄</span></button>
-      <div class="new-menu-wrap">
-        <button id="newMenuToggle" class="new-menu-toggle" type="button" aria-expanded="false" aria-controls="newMenu">Novo <span aria-hidden="true">⌄</span></button>
-        <div id="newMenu" class="new-menu hidden" role="menu">
-          <button type="button" role="menuitem" data-status-collection="new" data-status-label="Novo"><strong>Novo</strong><small>Najnoviji proizvodi u katalogu</small></button>
-          <button type="button" role="menuitem" data-status-collection="coming" data-status-label="Uskoro dolazi"><strong>Uskoro dolazi</strong><small>Najavljeni proizvodi i dopune</small></button>
-          <button type="button" role="menuitem" data-status-collection="arrived" data-status-label="Upravo stiglo"><strong>Upravo stiglo</strong><small>Sveže dopunjeno na lageru</small></button>
-        </div>
-      </div>
       <button class="quick-category" type="button" data-category="TX">Tekstil</button>
       <button class="quick-category" type="button" data-category="KS">Kućni program</button>
       <button class="quick-category" type="button" data-category="TE">Tehnologija</button>
@@ -51,21 +36,18 @@
   </nav>
 
   <main>
-    <section class="catalog-hero" aria-label="Aktuelna ponuda">
+    <section class="catalog-hero">
       <div class="container hero-inner">
-        <div class="hero-copy-column">
+        <div>
           <p class="eyebrow">DEMO GROUP · PROMOTIVNI PROIZVODI</p>
           <h1>Pronađite proizvod za vaš brend.</h1>
           <p class="hero-copy">Jedan model, sve dostupne boje i veličine. Cena i lager proveravaju se direktno za izabranu varijantu.</p>
-          <div class="hero-catalog-count"><strong id="heroTotal">1.756</strong><span>grupisanih modela u aktuelnom katalogu</span></div>
           <div class="hero-actions">
             <a class="hero-action-primary" href="#izdvojeno">Pogledaj izdvojeno <span aria-hidden="true">↓</span></a>
             <a class="hero-action-secondary" href="#searchForm">Pretraži katalog</a>
           </div>
         </div>
-        <div id="heroShowcase" class="hero-showcase" aria-live="polite" aria-label="Aktuelni noviteti">
-          <div class="hero-showcase-loading"><span></span><strong>Pripremamo aktuelne novitete…</strong></div>
-        </div>
+        <div class="hero-badge"><strong id="heroTotal">1.756</strong><span>grupisanih modela</span></div>
       </div>
     </section>
 
@@ -146,7 +128,7 @@
       </div>
 
       <div id="activeFilter" class="active-filter hidden">
-        <div><span>Aktivni izbor</span><strong id="activeFilterName"></strong></div>
+        <div><span>Aktivna kategorija</span><strong id="activeFilterName"></strong></div>
         <button id="clearCategory" type="button">Prikaži sve ×</button>
       </div>
 
@@ -164,6 +146,6 @@
   <footer class="site-footer"><div class="container">DemoShop · Demo Group katalog · Podaci se automatski osvežavaju</div></footer>
   <script src="cart-store.js?v=7"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=42"></script>
+  <script src="script.js?v=33"></script>
 </body>
 </html>

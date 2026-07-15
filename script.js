@@ -17,22 +17,16 @@ const els = {
   categoriesToggle: document.getElementById("categoriesToggle"),
   categoriesMenu: document.getElementById("categoriesMenu"),
   categoriesGrid: document.getElementById("categoriesGrid"),
-  newMenuToggle: document.getElementById("newMenuToggle"),
-  newMenu: document.getElementById("newMenu"),
   activeFilter: document.getElementById("activeFilter"),
   activeFilterName: document.getElementById("activeFilterName"),
   clearCategory: document.getElementById("clearCategory"),
   prev: document.getElementById("prevPage"),
   next: document.getElementById("nextPage"),
   paginationText: document.getElementById("paginationText"),
-  pagination: document.querySelector(".pagination"),
-  heroShowcase: document.getElementById("heroShowcase"),
   newProductsGrid: document.getElementById("newProductsGrid"),
   newProductsMessage: document.getElementById("newProductsMessage"),
   newProductsPrev: document.getElementById("newProductsPrev"),
   newProductsNext: document.getElementById("newProductsNext"),
-  refreshCatalog: document.getElementById("refreshCatalog"),
-  refreshCatalogLabel: document.getElementById("refreshCatalogLabel"),
 };
 
 const state = {
@@ -42,31 +36,14 @@ const state = {
   category: "",
   subCategory: "",
   collectionLabel: "",
-  status: "",
   requestId: 0,
   suggestionRequestId: 0,
   suggestionIndex: -1,
-  refreshToken: "",
 };
 
 const variantDetailCache = new Map();
-let heroSlideIndex = 0;
-let heroRotationTimer;
 let menuCategories = [];
 const menuSelection = { categoryCode: "", subCategoryCode: "" };
-
-function freshCatalogEndpoint(url) {
-  if (!state.refreshToken) return url;
-  const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}_refresh=${encodeURIComponent(state.refreshToken)}`;
-}
-
-function fetchCatalog(url, options = {}) {
-  return fetch(freshCatalogEndpoint(url), {
-    ...options,
-    cache: state.refreshToken ? "no-store" : (options.cache || "default"),
-  });
-}
 
 const initialUrlParams = new URLSearchParams(window.location.search);
 state.search = initialUrlParams.get("search") || "";
@@ -174,7 +151,7 @@ async function loadSearchSuggestions() {
       els.searchSuggestions.innerHTML = products.map((product, index) => {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
-        const href = `product.html?model=${encodeURIComponent(model)}&v=39`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=33`;
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
           <img class="search-suggestion-image" data-suggestion-index="${index}" alt="">
@@ -264,7 +241,6 @@ function productBadgeState(detail) {
       Number(item?.id) === 381 || /sublimacij/i.test(printNames[index])
     ),
     isHitPrice: Boolean(detail?.badges?.isHitPrice) || Boolean(detail?.discount) || statusNames.some(name => /hit\s*cena/i.test(name)),
-    isOrganic: Boolean(detail?.badges?.isOrganic) || [...statusNames, ...printNames].some(name => /organi(c|k)|organski\s+pamuk/i.test(name)),
   };
 }
 
@@ -274,90 +250,16 @@ function productBadgesHtml(detail) {
     badges.isNew ? '<span class="status-badge status-new">NEW</span>' : "",
     badges.isSublimation ? '<span class="status-badge status-sublimation" title="Pogodno za sublimaciju">S</span>' : "",
     badges.isHitPrice ? '<span class="status-badge status-hit" title="Hit cena">%</span>' : "",
-    badges.isOrganic ? '<span class="status-badge status-organic" title="Organski pamuk"><i aria-hidden="true"></i>ORGANIC</span>' : "",
   ].filter(Boolean).join("");
-}
-
-function parseCardArrivalDate(value) {
-  if (!value) return null;
-  const text = String(value).trim();
-  const dotNetMatch = text.match(/\/Date\((\d+)\)\//);
-  const localMatch = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})\.?$/);
-  const localYear = localMatch ? Number(localMatch[3]) + (localMatch[3].length === 2 ? 2000 : 0) : 0;
-  const date = localMatch
-    ? new Date(localYear, Number(localMatch[2]) - 1, Number(localMatch[1]))
-    : new Date(dotNetMatch ? Number(dotNetMatch[1]) : text);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function cardArrivalSummary(detail) {
-  const arrivals = (Array.isArray(detail?.arrivals) ? detail.arrivals : [])
-    .map(item => ({ ...item, parsedDate: parseCardArrivalDate(item?.date) }))
-    .filter(item => item.parsedDate || Number(item?.quantity) > 0)
-    .sort((a, b) => (a.parsedDate?.getTime() || Number.MAX_SAFE_INTEGER) - (b.parsedDate?.getTime() || Number.MAX_SAFE_INTEGER));
-  const arrival = arrivals[0];
-  if (!arrival) return null;
-  const quantity = Number(arrival.quantity);
-  return {
-    date: arrival.parsedDate ? arrival.parsedDate.toLocaleDateString("sr-RS", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "Dolazak najavljen",
-    quantity: Number.isFinite(quantity) && quantity > 0 ? `${Math.floor(quantity).toLocaleString("sr-RS")} kom. očekivano` : "Očekuje se dopuna lagera",
-  };
-}
-
-function variantPreviewItems(product) {
-  const seen = new Set();
-  return (Array.isArray(product?.colors) ? product.colors : []).map(color => {
-    const rawCode = String(color?.representativeCode || "").trim().replace(/-(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|[2-9]XL|[0-9]{2,3})$/i, "");
-    const assetId = rawCode.replace(/[^a-zA-Z0-9]/g, "") || String(color?.representativeVariantId || "").split("-")[0].replace(/[^a-zA-Z0-9]/g, "");
-    const url = assetId ? `https://apiv2.promosolution.services/content/ModelItem/${assetId}_001.webp` : "";
-    if (!url || seen.has(url)) return null;
-    seen.add(url);
-    return { url, label: color?.colorCode || "Varijanta proizvoda" };
-  }).filter(Boolean).slice(0, 5);
-}
-
-function cardStockState(value) {
-  const stock = Number(value);
-
-  if (!Number.isFinite(stock)) {
-    return {
-      className: "unavailable",
-      label: "Stanje nije dostupno",
-      amount: "Pokušajte ponovo",
-    };
-  }
-
-  if (stock <= 0) {
-    return {
-      className: "empty",
-      label: "Trenutno nema na stanju",
-      amount: "0 kom.",
-    };
-  }
-
-  if (stock <= 100) {
-    return {
-      className: "low",
-      label: "Malo na stanju",
-      amount: `${Math.floor(stock).toLocaleString("sr-RS")} kom.`,
-    };
-  }
-
-  return {
-    className: "available",
-    label: "Na stanju",
-    amount: `${Math.floor(stock).toLocaleString("sr-RS")} kom.`,
-  };
 }
 
 function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const imageIds = modelAssetIds(model, product.representativeCode);
   const modelImageId = imageIds[0] || "";
-  const href = `product.html?model=${encodeURIComponent(model)}&v=39`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=33`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
-  const previews = variantPreviewItems(product);
 
   return `
     <article class="product-card" data-detail-id="${escapeHtml(product.representativeVariantId || "")}" data-model-image-id="${escapeHtml(modelImageId)}" data-model-image-ids="${escapeHtml(imageIds.join(","))}" data-index="${index}">
@@ -375,15 +277,6 @@ function cardTemplate(product, index) {
         <h2><a href="${href}">${escapeHtml(display.title)}</a></h2>
         ${display.description ? `<p class="card-description">${escapeHtml(display.description)}</p>` : ""}
         <p class="card-code">Model ${escapeHtml(model)}</p>
-        ${previews.length > 1 ? `<div class="card-variant-previews" aria-label="Dostupne varijante">
-          ${previews.map((preview, previewIndex) => `<button type="button" data-preview-src="${escapeHtml(preview.url)}" aria-label="Prikaži varijantu ${escapeHtml(preview.label)}" ${previewIndex === 0 ? 'class="active"' : ""}><img src="${escapeHtml(preview.url)}" alt="" loading="lazy"></button>`).join("")}
-          ${Number(product.colorCount || 0) > previews.length ? `<small>+${Number(product.colorCount) - previews.length} više</small>` : ""}
-        </div>` : ""}
-        <div class="card-stock card-stock-loading" aria-live="polite">
-          <span class="card-stock-dot" aria-hidden="true"></span>
-          <span><strong>Provera stanja…</strong><small></small></span>
-        </div>
-        <div class="card-arrival hidden"><span class="arrival-truck" aria-hidden="true"></span><span><strong></strong><small></small></span></div>
         <div class="card-meta">
           <div><span class="card-price">Učitavanje…</span><small>po komadu</small></div>
           <a class="card-arrow" href="${href}" aria-label="Detalji proizvoda">→</a>
@@ -420,11 +313,6 @@ function applyCardDetail(card, detail) {
   const hoverImage = card.querySelector(".card-image-hover");
   const media = card.querySelector(".card-media");
   const price = card.querySelector(".card-price");
-  const stockElement = card.querySelector(".card-stock");
-  const arrivalElement = card.querySelector(".card-arrival");
-  image?.addEventListener("load", () => {
-    if (!media?.classList.contains("previewing-variant")) card.dataset.primaryImageSrc = image.currentSrc || image.src;
-  });
   skeleton?.remove();
 
   const modelImageId = card.dataset.modelImageId || "";
@@ -434,10 +322,7 @@ function applyCardDetail(card, detail) {
 
   if (modelImageUrl) {
     image.alt = detail?.name || "Proizvod";
-    image.onload = () => {
-      image.classList.add("loaded");
-      if (!media?.classList.contains("previewing-variant")) card.dataset.primaryImageSrc = image.currentSrc || image.src;
-    };
+    image.onload = () => image.classList.add("loaded");
     image.onerror = () => {
       image.onerror = null;
       if (detail?.image) {
@@ -464,42 +349,8 @@ function applyCardDetail(card, detail) {
     }
   }
   price.textContent = formatPrice(detail?.price);
-  if (stockElement) {
-    const stockState = cardStockState(detail?.stock);
-    stockElement.className = `card-stock card-stock-${stockState.className}`;
-    const label = stockElement.querySelector("strong");
-    const amount = stockElement.querySelector("small");
-    if (label) label.textContent = stockState.label;
-    if (amount) amount.textContent = stockState.amount;
-  }
   const badges = card.querySelector(".product-status-badges");
   if (badges) badges.innerHTML = productBadgesHtml(detail);
-
-  const arrival = cardArrivalSummary(detail);
-  if (arrivalElement && arrival) {
-    arrivalElement.classList.remove("hidden");
-    arrivalElement.querySelector("strong").textContent = arrival.date;
-    arrivalElement.querySelector("small").textContent = arrival.quantity;
-  }
-
-  card.querySelectorAll("[data-preview-src]").forEach(button => {
-    const showPreview = () => {
-      if (!button.dataset.previewSrc) return;
-      if (!card.dataset.primaryImageSrc) card.dataset.primaryImageSrc = image.currentSrc || image.src;
-      media?.classList.add("previewing-variant");
-      image.src = button.dataset.previewSrc;
-      card.querySelectorAll("[data-preview-src]").forEach(item => item.classList.toggle("active", item === button));
-    };
-    const restorePreview = () => {
-      media?.classList.remove("previewing-variant");
-      if (card.dataset.primaryImageSrc) image.src = card.dataset.primaryImageSrc;
-    };
-    button.addEventListener("pointerenter", showPreview);
-    button.addEventListener("focus", showPreview);
-    button.addEventListener("pointerleave", restorePreview);
-    button.addEventListener("blur", restorePreview);
-    button.querySelector("img")?.addEventListener("error", () => button.remove(), { once: true });
-  });
 
   const detailImages = [...new Set([
     detail?.image,
@@ -565,143 +416,11 @@ async function enrichCards(requestId, root = els.grid) {
   await Promise.all(Array.from({ length: DETAIL_CONCURRENCY }, worker));
 }
 
-function activateHeroSlide(index, restartRotation = true) {
-  if (!els.heroShowcase) return;
-  const slides = [...els.heroShowcase.querySelectorAll("[data-hero-slide]")];
-  if (!slides.length) return;
-
-  heroSlideIndex = (index + slides.length) % slides.length;
-  slides.forEach((slide, slideIndex) => {
-    const active = slideIndex === heroSlideIndex;
-    slide.classList.toggle("active", active);
-    slide.setAttribute("aria-hidden", String(!active));
-    slide.tabIndex = active ? 0 : -1;
-  });
-  els.heroShowcase.querySelectorAll("[data-hero-dot]").forEach((dot, dotIndex) => {
-    dot.classList.toggle("active", dotIndex === heroSlideIndex);
-    dot.setAttribute("aria-current", dotIndex === heroSlideIndex ? "true" : "false");
-  });
-
-  if (restartRotation) startHeroRotation();
-}
-
-function stopHeroRotation() {
-  window.clearInterval(heroRotationTimer);
-  heroRotationTimer = undefined;
-}
-
-function startHeroRotation() {
-  stopHeroRotation();
-  const slideCount = els.heroShowcase?.querySelectorAll("[data-hero-slide]").length || 0;
-  if (slideCount < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  heroRotationTimer = window.setInterval(() => activateHeroSlide(heroSlideIndex + 1, false), 6500);
-}
-
-async function renderHeroShowcase(products) {
-  if (!els.heroShowcase) return;
-  stopHeroRotation();
-
-  if (!products.length) {
-    els.heroShowcase.innerHTML = `
-      <div class="hero-showcase-fallback">
-        <span>DEMO GROUP</span>
-        <strong>Vaš brend na pravom proizvodu.</strong>
-        <p>Pregledajte aktuelni katalog i pošaljite upit bez obaveze.</p>
-      </div>`;
-    return;
-  }
-
-  const enriched = await Promise.all(products.slice(0, 8).map(async product => ({
-    product,
-    detail: await fetchVariantDetail(product.representativeVariantId),
-  })));
-  const slides = enriched
-    .filter(item => item.detail?.image || modelAssetIds(item.product.modelCode, item.product.representativeCode).length)
-    .sort((a, b) => Number(b.detail?.stock > 0) - Number(a.detail?.stock > 0))
-    .slice(0, 5);
-
-  if (!slides.length) return renderHeroShowcase([]);
-
-  els.heroShowcase.innerHTML = `
-    <div class="hero-product-slides">
-      ${slides.map(({ product, detail }, index) => {
-        const model = product.modelCode || "";
-        const display = productDisplayName(product.name);
-        const imageIds = modelAssetIds(model, product.representativeCode);
-        const modelImage = imageIds[0]
-          ? `https://apiv2.promosolution.services/content/ModelItem/${imageIds[0]}_000.webp`
-          : "";
-        const primaryImage = modelImage || detail?.image || "";
-        const stockState = cardStockState(detail?.stock);
-        const href = `product.html?model=${encodeURIComponent(model)}&v=39`;
-
-        return `<a class="hero-product-slide ${index === 0 ? "active" : ""}" data-hero-slide="${index}"
-          href="${href}" aria-hidden="${index === 0 ? "false" : "true"}" tabindex="${index === 0 ? "0" : "-1"}">
-          <span class="hero-product-kicker">NOVO U KATALOGU</span>
-          <div class="hero-product-image">
-            <img src="${escapeHtml(primaryImage)}" data-fallback="${escapeHtml(detail?.image || "")}" alt="${escapeHtml(display.title)}">
-          </div>
-          <div class="hero-product-copy">
-            <small>Model ${escapeHtml(model)}</small>
-            <strong>${escapeHtml(display.title)}</strong>
-            ${display.description ? `<p>${escapeHtml(display.description)}</p>` : ""}
-            <div class="hero-product-meta">
-              <b>${formatPrice(detail?.price)}</b>
-              <span class="hero-product-stock hero-product-stock-${stockState.className}">${escapeHtml(stockState.label)} · ${escapeHtml(stockState.amount)}</span>
-            </div>
-            <em>Pogledaj proizvod <b aria-hidden="true">→</b></em>
-          </div>
-        </a>`;
-      }).join("")}
-    </div>
-    <div class="hero-showcase-controls">
-      <button type="button" data-hero-prev aria-label="Prethodni proizvod">←</button>
-      <div class="hero-showcase-dots">
-        ${slides.map((_, index) => `<button type="button" class="${index === 0 ? "active" : ""}" data-hero-dot="${index}" aria-label="Prikaži proizvod ${index + 1}" aria-current="${index === 0 ? "true" : "false"}"></button>`).join("")}
-      </div>
-      <button type="button" data-hero-next aria-label="Sledeći proizvod">→</button>
-    </div>`;
-
-  els.heroShowcase.querySelectorAll(".hero-product-image img").forEach(image => {
-    image.onerror = () => {
-      const fallback = image.dataset.fallback || "";
-      if (fallback && image.src !== fallback) {
-        image.src = fallback;
-      } else {
-        image.closest(".hero-product-image")?.classList.add("no-image");
-        image.remove();
-      }
-    };
-  });
-
-  els.heroShowcase.querySelector("[data-hero-prev]")?.addEventListener("click", event => {
-    event.preventDefault();
-    activateHeroSlide(heroSlideIndex - 1);
-  });
-  els.heroShowcase.querySelector("[data-hero-next]")?.addEventListener("click", event => {
-    event.preventDefault();
-    activateHeroSlide(heroSlideIndex + 1);
-  });
-  els.heroShowcase.querySelectorAll("[data-hero-dot]").forEach(dot => {
-    dot.addEventListener("click", event => {
-      event.preventDefault();
-      activateHeroSlide(Number(dot.dataset.heroDot || 0));
-    });
-  });
-  els.heroShowcase.addEventListener("pointerenter", stopHeroRotation);
-  els.heroShowcase.addEventListener("pointerleave", startHeroRotation);
-  els.heroShowcase.addEventListener("focusin", stopHeroRotation);
-  els.heroShowcase.addEventListener("focusout", startHeroRotation);
-
-  activateHeroSlide(0, false);
-  startHeroRotation();
-}
-
 async function loadNewProducts() {
   if (!els.newProductsGrid) return;
 
   try {
-    const response = await fetchCatalog(`${API_BASE}/new-products?limit=12`, {
+    const response = await fetch(`${API_BASE}/new-products?limit=12`, {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -711,17 +430,14 @@ async function loadNewProducts() {
     const products = Array.isArray(data.products) ? data.products : [];
     if (!products.length) {
       els.newProductsMessage.textContent = "Novi proizvodi se trenutno ažuriraju.";
-      renderHeroShowcase([]);
       return;
     }
 
     els.newProductsMessage.classList.add("hidden");
     els.newProductsGrid.innerHTML = products.map(cardTemplate).join("");
     enrichCards(null, els.newProductsGrid);
-    renderHeroShowcase(products);
   } catch (error) {
     els.newProductsMessage.textContent = "Noviteti će se pojaviti nakon sledećeg osvežavanja kataloga.";
-    renderHeroShowcase([]);
     console.error("Noviteti nisu dostupni", error);
   }
 }
@@ -732,30 +448,7 @@ function closeCategoriesMenu() {
   document.body.classList.remove("menu-open");
 }
 
-function closeNewMenu() {
-  els.newMenu?.classList.add("hidden");
-  els.newMenuToggle?.setAttribute("aria-expanded", "false");
-}
-
-function applyStatusCollection(status, label) {
-  state.status = status;
-  state.category = "";
-  state.subCategory = "";
-  state.search = "";
-  state.collectionLabel = label;
-  state.page = 1;
-  els.searchInput.value = "";
-  closeCategoriesMenu();
-  closeNewMenu();
-  loadProducts();
-  const catalogTop = els.searchForm
-    ? els.searchForm.getBoundingClientRect().top + window.scrollY - 145
-    : 300;
-  window.scrollTo({ top: Math.max(0, catalogTop), behavior: "smooth" });
-}
-
 function applyCategory(category, subCategory = "", options = {}) {
-  state.status = "";
   state.category = category;
   state.subCategory = subCategory;
   state.search = options.search || "";
@@ -866,7 +559,7 @@ function renderCategoriesMenu() {
 
 async function loadCategories() {
   try {
-    const response = await fetchCatalog(`${API_BASE}/catalog-filters`, { headers: { Accept: "application/json" } });
+    const response = await fetch(`${API_BASE}/catalog-filters`, { headers: { Accept: "application/json" } });
     if (!response.ok) return;
     const data = await response.json();
     if (!data.success || !Array.isArray(data.categories)) return;
@@ -887,18 +580,14 @@ async function loadProducts() {
   els.message.textContent = "Učitavanje proizvoda…";
   els.grid.innerHTML = "";
 
-  const params = new URLSearchParams({ page: String(state.page), limit: String(state.status ? 32 : PAGE_LIMIT) });
+  const params = new URLSearchParams({ page: String(state.page), limit: String(PAGE_LIMIT) });
   if (state.search) params.set("search", state.search);
   if (state.category) params.set("category", state.category);
   if (state.subCategory) params.set("subCategory", state.subCategory);
 
   try {
-    const endpoint = state.status
-      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=8`
-      : `${API_BASE}/products-grouped?${params}`;
-    const response = await fetchCatalog(endpoint, {
+    const response = await fetch(`${API_BASE}/products-grouped?${params}`, {
       headers: { Accept: "application/json" },
-      cache: state.status ? "no-store" : "default",
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
@@ -911,20 +600,17 @@ async function loadProducts() {
     const matches = Number(data.totalMatchingProducts || 0);
 
     els.apiStatus.textContent = "Katalog ažuriran";
-    if (!state.status) els.heroTotal.textContent = total.toLocaleString("sr-RS");
+    els.heroTotal.textContent = total.toLocaleString("sr-RS");
     els.totalMatches.textContent = matches.toLocaleString("sr-RS");
     const filterName = state.collectionLabel || (state.subCategory ? subCategoryLabel(state.subCategory) : categoryLabel(state.category));
-    els.resultsLabel.textContent = state.status ? "proizvoda u kolekciji" : (state.search ? `rezultata za „${state.search}”` : "proizvoda");
-    els.activeFilter.classList.toggle("hidden", !(state.category || state.status));
+    els.resultsLabel.textContent = state.search ? `rezultata za „${state.search}”` : "proizvoda";
+    els.activeFilter.classList.toggle("hidden", !state.category);
     els.activeFilterName.textContent = filterName || "";
-    els.pageInfo.textContent = state.status
-      ? `${state.collectionLabel} · Strana ${state.page} od ${state.totalPages}`
-      : `Strana ${state.page} od ${state.totalPages}`;
+    els.pageInfo.textContent = `Strana ${state.page} od ${state.totalPages}`;
     els.paginationText.textContent = `${state.page} / ${state.totalPages}`;
     els.prev.disabled = !data.hasPreviousPage;
     els.next.disabled = !data.hasNextPage;
     els.clearSearch.classList.toggle("hidden", !state.search);
-    els.pagination?.classList.toggle("hidden", state.totalPages <= 1);
 
     const products = Array.isArray(data.products) ? data.products : [];
     if (!products.length) {
@@ -946,7 +632,6 @@ async function loadProducts() {
 els.searchForm?.addEventListener("submit", event => {
   event.preventDefault();
   hideSearchSuggestions();
-  state.status = "";
   state.search = els.searchInput.value.trim();
   state.collectionLabel = "";
   state.page = 1;
@@ -978,7 +663,6 @@ document.addEventListener("pointerdown", event => {
 
 els.clearSearch?.addEventListener("click", () => {
   hideSearchSuggestions();
-  state.status = "";
   state.search = "";
   state.collectionLabel = "";
   state.page = 1;
@@ -987,7 +671,6 @@ els.clearSearch?.addEventListener("click", () => {
 });
 
 els.categoriesToggle?.addEventListener("click", () => {
-  closeNewMenu();
   const willOpen = els.categoriesMenu.classList.contains("hidden");
   if (willOpen && menuCategories.length) {
     menuSelection.categoryCode = state.category;
@@ -997,19 +680,6 @@ els.categoriesToggle?.addEventListener("click", () => {
   els.categoriesMenu.classList.toggle("hidden", !willOpen);
   els.categoriesToggle.setAttribute("aria-expanded", String(willOpen));
   document.body.classList.toggle("menu-open", willOpen);
-});
-
-els.newMenuToggle?.addEventListener("click", () => {
-  const willOpen = els.newMenu?.classList.contains("hidden");
-  closeCategoriesMenu();
-  els.newMenu?.classList.toggle("hidden", !willOpen);
-  els.newMenuToggle.setAttribute("aria-expanded", String(willOpen));
-});
-
-els.newMenu?.addEventListener("click", event => {
-  const target = event.target instanceof Element ? event.target.closest("[data-status-collection]") : null;
-  if (!target) return;
-  applyStatusCollection(target.dataset.statusCollection || "new", target.dataset.statusLabel || "Novo");
 });
 
 document.querySelectorAll(".quick-category").forEach(button => {
@@ -1055,17 +725,11 @@ els.categoriesGrid?.addEventListener("click", event => {
 
 els.clearCategory?.addEventListener("click", () => applyCategory("", ""));
 
-document.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    closeCategoriesMenu();
-    closeNewMenu();
-  }
-});
+document.addEventListener("keydown", event => { if (event.key === "Escape") closeCategoriesMenu(); });
 document.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
-  if (!target) return;
-  if (!els.categoriesMenu.classList.contains("hidden") && !els.categoriesMenu.contains(target) && !els.categoriesToggle.contains(target)) closeCategoriesMenu();
-  if (els.newMenu && !els.newMenu.classList.contains("hidden") && !els.newMenu.contains(target) && !els.newMenuToggle?.contains(target)) closeNewMenu();
+  if (!target || els.categoriesMenu.classList.contains("hidden")) return;
+  if (!els.categoriesMenu.contains(target) && !els.categoriesToggle.contains(target)) closeCategoriesMenu();
 });
 
 els.prev?.addEventListener("click", () => {
@@ -1082,25 +746,6 @@ els.newProductsPrev?.addEventListener("click", () => {
 
 els.newProductsNext?.addEventListener("click", () => {
   els.newProductsGrid?.scrollBy({ left: 620, behavior: "smooth" });
-});
-
-els.refreshCatalog?.addEventListener("click", async () => {
-  if (els.refreshCatalog.disabled) return;
-  state.refreshToken = Date.now().toString(36);
-  els.refreshCatalog.disabled = true;
-  els.refreshCatalog.classList.add("is-loading");
-  if (els.refreshCatalogLabel) els.refreshCatalogLabel.textContent = "Osvežavanje…";
-  els.apiStatus.textContent = "Osvežavanje kataloga";
-
-  await Promise.allSettled([
-    loadCategories(),
-    loadNewProducts(),
-    loadProducts(),
-  ]);
-
-  els.refreshCatalog.disabled = false;
-  els.refreshCatalog.classList.remove("is-loading");
-  if (els.refreshCatalogLabel) els.refreshCatalogLabel.textContent = "Osveži katalog";
 });
 
 loadCategories();
