@@ -104,11 +104,13 @@ function productBadgesHtml(detail) {
     Number(item?.id) === 381 || /sublimacij/i.test(String(item?.name || ""))
   );
   const isHitPrice = Boolean(detail?.badges?.isHitPrice) || Boolean(detail?.discount) || statusNames.some(name => /hit\s*cena/i.test(name));
+  const isOrganic = Boolean(detail?.badges?.isOrganic) || [...statusNames, ...printMethods.map(item => String(item?.name || ""))].some(name => /organi(c|k)|organski\s+pamuk/i.test(name));
 
   return [
     isNew ? '<span class="status-badge status-new">NEW</span>' : "",
     isSublimation ? '<span class="status-badge status-sublimation" title="Pogodno za sublimaciju">S</span>' : "",
     isHitPrice ? '<span class="status-badge status-hit" title="Hit cena">%</span>' : "",
+    isOrganic ? '<span class="status-badge status-organic" title="Organski pamuk"><i aria-hidden="true"></i>ORGANIC</span>' : "",
   ].filter(Boolean).join("");
 }
 
@@ -120,8 +122,13 @@ function formatStock(value) {
 
 function parseArrivalDate(value) {
   if (!value) return null;
-  const dotNetMatch = String(value).match(/\/Date\((\d+)\)\//);
-  const date = new Date(dotNetMatch ? Number(dotNetMatch[1]) : value);
+  const text = String(value).trim();
+  const dotNetMatch = text.match(/\/Date\((\d+)\)\//);
+  const localMatch = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})\.?$/);
+  const localYear = localMatch ? Number(localMatch[3]) + (localMatch[3].length === 2 ? 2000 : 0) : 0;
+  const date = localMatch
+    ? new Date(localYear, Number(localMatch[2]) - 1, Number(localMatch[1]))
+    : new Date(dotNetMatch ? Number(dotNetMatch[1]) : text);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -660,7 +667,7 @@ async function loadRelatedProducts() {
       const model = item.modelCode || "";
       const imageIds = modelAssetIds(model, item.representativeCode);
       const modelImageId = imageIds[0] || "";
-      const href = `product.html?model=${encodeURIComponent(model)}&v=35`;
+      const href = `product.html?model=${encodeURIComponent(model)}&v=36`;
       const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
       return `<article class="related-product-card" data-index="${index}" data-detail-id="${escapeHtml(item.representativeVariantId || "")}">
         <a class="related-product-media" href="${href}">

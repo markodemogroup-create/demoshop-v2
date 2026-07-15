@@ -6,7 +6,7 @@
   <meta name="description" content="DemoShop katalog promotivnih proizvoda sa bojama, veličinama, cenama i lagerom.">
   <title>DemoShop — Katalog promotivnih proizvoda</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
-  <link rel="stylesheet" href="style.css?v=35">
+  <link rel="stylesheet" href="style.css?v=36">
   <link rel="stylesheet" href="catalog-taxonomy.css?v=13">
 </head>
 <body>
@@ -24,6 +24,14 @@
   <nav class="catalog-nav" aria-label="Glavna navigacija kataloga">
     <div class="container nav-inner">
       <button id="categoriesToggle" class="categories-toggle" type="button" aria-expanded="false" aria-controls="categoriesMenu">Kategorije <span aria-hidden="true">⌄</span></button>
+      <div class="new-menu-wrap">
+        <button id="newMenuToggle" class="new-menu-toggle" type="button" aria-expanded="false" aria-controls="newMenu">Novo <span aria-hidden="true">⌄</span></button>
+        <div id="newMenu" class="new-menu hidden" role="menu">
+          <button type="button" role="menuitem" data-status-collection="new" data-status-label="Novo"><strong>Novo</strong><small>Najnoviji proizvodi u katalogu</small></button>
+          <button type="button" role="menuitem" data-status-collection="coming" data-status-label="Uskoro dolazi"><strong>Uskoro dolazi</strong><small>Najavljeni proizvodi i dopune</small></button>
+          <button type="button" role="menuitem" data-status-collection="arrived" data-status-label="Upravo stiglo"><strong>Upravo stiglo</strong><small>Sveže dopunjeno na lageru</small></button>
+        </div>
+      </div>
       <button class="quick-category" type="button" data-category="TX">Tekstil</button>
       <button class="quick-category" type="button" data-category="KS">Kućni program</button>
       <button class="quick-category" type="button" data-category="TE">Tehnologija</button>
@@ -131,7 +139,7 @@
       </div>
 
       <div id="activeFilter" class="active-filter hidden">
-        <div><span>Aktivna kategorija</span><strong id="activeFilterName"></strong></div>
+        <div><span>Aktivni izbor</span><strong id="activeFilterName"></strong></div>
         <button id="clearCategory" type="button">Prikaži sve ×</button>
       </div>
 
@@ -149,6 +157,6 @@
   <footer class="site-footer"><div class="container">DemoShop · Demo Group katalog · Podaci se automatski osvežavaju</div></footer>
   <script src="cart-store.js?v=7"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=35"></script>
+  <script src="script.js?v=36"></script>
 </body>
 </html>

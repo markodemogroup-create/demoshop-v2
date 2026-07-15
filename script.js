@@ -17,12 +17,15 @@ const els = {
   categoriesToggle: document.getElementById("categoriesToggle"),
   categoriesMenu: document.getElementById("categoriesMenu"),
   categoriesGrid: document.getElementById("categoriesGrid"),
+  newMenuToggle: document.getElementById("newMenuToggle"),
+  newMenu: document.getElementById("newMenu"),
   activeFilter: document.getElementById("activeFilter"),
   activeFilterName: document.getElementById("activeFilterName"),
   clearCategory: document.getElementById("clearCategory"),
   prev: document.getElementById("prevPage"),
   next: document.getElementById("nextPage"),
   paginationText: document.getElementById("paginationText"),
+  pagination: document.querySelector(".pagination"),
   heroShowcase: document.getElementById("heroShowcase"),
   newProductsGrid: document.getElementById("newProductsGrid"),
   newProductsMessage: document.getElementById("newProductsMessage"),
@@ -37,6 +40,7 @@ const state = {
   category: "",
   subCategory: "",
   collectionLabel: "",
+  status: "",
   requestId: 0,
   suggestionRequestId: 0,
   suggestionIndex: -1,
@@ -154,7 +158,7 @@ async function loadSearchSuggestions() {
       els.searchSuggestions.innerHTML = products.map((product, index) => {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
-        const href = `product.html?model=${encodeURIComponent(model)}&v=35`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=36`;
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
           <img class="search-suggestion-image" data-suggestion-index="${index}" alt="">
@@ -244,6 +248,7 @@ function productBadgeState(detail) {
       Number(item?.id) === 381 || /sublimacij/i.test(printNames[index])
     ),
     isHitPrice: Boolean(detail?.badges?.isHitPrice) || Boolean(detail?.discount) || statusNames.some(name => /hit\s*cena/i.test(name)),
+    isOrganic: Boolean(detail?.badges?.isOrganic) || [...statusNames, ...printNames].some(name => /organi(c|k)|organski\s+pamuk/i.test(name)),
   };
 }
 
@@ -253,7 +258,46 @@ function productBadgesHtml(detail) {
     badges.isNew ? '<span class="status-badge status-new">NEW</span>' : "",
     badges.isSublimation ? '<span class="status-badge status-sublimation" title="Pogodno za sublimaciju">S</span>' : "",
     badges.isHitPrice ? '<span class="status-badge status-hit" title="Hit cena">%</span>' : "",
+    badges.isOrganic ? '<span class="status-badge status-organic" title="Organski pamuk"><i aria-hidden="true"></i>ORGANIC</span>' : "",
   ].filter(Boolean).join("");
+}
+
+function parseCardArrivalDate(value) {
+  if (!value) return null;
+  const text = String(value).trim();
+  const dotNetMatch = text.match(/\/Date\((\d+)\)\//);
+  const localMatch = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})\.?$/);
+  const localYear = localMatch ? Number(localMatch[3]) + (localMatch[3].length === 2 ? 2000 : 0) : 0;
+  const date = localMatch
+    ? new Date(localYear, Number(localMatch[2]) - 1, Number(localMatch[1]))
+    : new Date(dotNetMatch ? Number(dotNetMatch[1]) : text);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function cardArrivalSummary(detail) {
+  const arrivals = (Array.isArray(detail?.arrivals) ? detail.arrivals : [])
+    .map(item => ({ ...item, parsedDate: parseCardArrivalDate(item?.date) }))
+    .filter(item => item.parsedDate || Number(item?.quantity) > 0)
+    .sort((a, b) => (a.parsedDate?.getTime() || Number.MAX_SAFE_INTEGER) - (b.parsedDate?.getTime() || Number.MAX_SAFE_INTEGER));
+  const arrival = arrivals[0];
+  if (!arrival) return null;
+  const quantity = Number(arrival.quantity);
+  return {
+    date: arrival.parsedDate ? arrival.parsedDate.toLocaleDateString("sr-RS", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "Dolazak najavljen",
+    quantity: Number.isFinite(quantity) && quantity > 0 ? `${Math.floor(quantity).toLocaleString("sr-RS")} kom. očekivano` : "Očekuje se dopuna lagera",
+  };
+}
+
+function variantPreviewItems(product) {
+  const seen = new Set();
+  return (Array.isArray(product?.colors) ? product.colors : []).map(color => {
+    const rawCode = String(color?.representativeCode || "").trim().replace(/-(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|[2-9]XL|[0-9]{2,3})$/i, "");
+    const assetId = rawCode.replace(/[^a-zA-Z0-9]/g, "") || String(color?.representativeVariantId || "").split("-")[0].replace(/[^a-zA-Z0-9]/g, "");
+    const url = assetId ? `https://apiv2.promosolution.services/content/ModelItem/${assetId}_001.webp` : "";
+    if (!url || seen.has(url)) return null;
+    seen.add(url);
+    return { url, label: color?.colorCode || "Varijanta proizvoda" };
+  }).filter(Boolean).slice(0, 5);
 }
 
 function cardStockState(value) {
@@ -294,9 +338,10 @@ function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const imageIds = modelAssetIds(model, product.representativeCode);
   const modelImageId = imageIds[0] || "";
-  const href = `product.html?model=${encodeURIComponent(model)}&v=35`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=36`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
+  const previews = variantPreviewItems(product);
 
   return `
     <article class="product-card" data-detail-id="${escapeHtml(product.representativeVariantId || "")}" data-model-image-id="${escapeHtml(modelImageId)}" data-model-image-ids="${escapeHtml(imageIds.join(","))}" data-index="${index}">
@@ -314,10 +359,15 @@ function cardTemplate(product, index) {
         <h2><a href="${href}">${escapeHtml(display.title)}</a></h2>
         ${display.description ? `<p class="card-description">${escapeHtml(display.description)}</p>` : ""}
         <p class="card-code">Model ${escapeHtml(model)}</p>
+        ${previews.length > 1 ? `<div class="card-variant-previews" aria-label="Dostupne varijante">
+          ${previews.map((preview, previewIndex) => `<button type="button" data-preview-src="${escapeHtml(preview.url)}" aria-label="Prikaži varijantu ${escapeHtml(preview.label)}" ${previewIndex === 0 ? 'class="active"' : ""}><img src="${escapeHtml(preview.url)}" alt="" loading="lazy"></button>`).join("")}
+          ${Number(product.colorCount || 0) > previews.length ? `<small>+${Number(product.colorCount) - previews.length} više</small>` : ""}
+        </div>` : ""}
         <div class="card-stock card-stock-loading" aria-live="polite">
           <span class="card-stock-dot" aria-hidden="true"></span>
           <span><strong>Provera stanja…</strong><small></small></span>
         </div>
+        <div class="card-arrival hidden"><span class="arrival-truck" aria-hidden="true"></span><span><strong></strong><small></small></span></div>
         <div class="card-meta">
           <div><span class="card-price">Učitavanje…</span><small>po komadu</small></div>
           <a class="card-arrow" href="${href}" aria-label="Detalji proizvoda">→</a>
@@ -355,6 +405,10 @@ function applyCardDetail(card, detail) {
   const media = card.querySelector(".card-media");
   const price = card.querySelector(".card-price");
   const stockElement = card.querySelector(".card-stock");
+  const arrivalElement = card.querySelector(".card-arrival");
+  image?.addEventListener("load", () => {
+    if (!media?.classList.contains("previewing-variant")) card.dataset.primaryImageSrc = image.currentSrc || image.src;
+  });
   skeleton?.remove();
 
   const modelImageId = card.dataset.modelImageId || "";
@@ -364,7 +418,10 @@ function applyCardDetail(card, detail) {
 
   if (modelImageUrl) {
     image.alt = detail?.name || "Proizvod";
-    image.onload = () => image.classList.add("loaded");
+    image.onload = () => {
+      image.classList.add("loaded");
+      if (!media?.classList.contains("previewing-variant")) card.dataset.primaryImageSrc = image.currentSrc || image.src;
+    };
     image.onerror = () => {
       image.onerror = null;
       if (detail?.image) {
@@ -401,6 +458,32 @@ function applyCardDetail(card, detail) {
   }
   const badges = card.querySelector(".product-status-badges");
   if (badges) badges.innerHTML = productBadgesHtml(detail);
+
+  const arrival = cardArrivalSummary(detail);
+  if (arrivalElement && arrival) {
+    arrivalElement.classList.remove("hidden");
+    arrivalElement.querySelector("strong").textContent = arrival.date;
+    arrivalElement.querySelector("small").textContent = arrival.quantity;
+  }
+
+  card.querySelectorAll("[data-preview-src]").forEach(button => {
+    const showPreview = () => {
+      if (!button.dataset.previewSrc) return;
+      if (!card.dataset.primaryImageSrc) card.dataset.primaryImageSrc = image.currentSrc || image.src;
+      media?.classList.add("previewing-variant");
+      image.src = button.dataset.previewSrc;
+      card.querySelectorAll("[data-preview-src]").forEach(item => item.classList.toggle("active", item === button));
+    };
+    const restorePreview = () => {
+      media?.classList.remove("previewing-variant");
+      if (card.dataset.primaryImageSrc) image.src = card.dataset.primaryImageSrc;
+    };
+    button.addEventListener("pointerenter", showPreview);
+    button.addEventListener("focus", showPreview);
+    button.addEventListener("pointerleave", restorePreview);
+    button.addEventListener("blur", restorePreview);
+    button.querySelector("img")?.addEventListener("error", () => button.remove(), { once: true });
+  });
 
   const detailImages = [...new Set([
     detail?.image,
@@ -534,7 +617,7 @@ async function renderHeroShowcase(products) {
           : "";
         const primaryImage = modelImage || detail?.image || "";
         const stockState = cardStockState(detail?.stock);
-        const href = `product.html?model=${encodeURIComponent(model)}&v=35`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=36`;
 
         return `<a class="hero-product-slide ${index === 0 ? "active" : ""}" data-hero-slide="${index}"
           href="${href}" aria-hidden="${index === 0 ? "false" : "true"}" tabindex="${index === 0 ? "0" : "-1"}">
@@ -633,7 +716,30 @@ function closeCategoriesMenu() {
   document.body.classList.remove("menu-open");
 }
 
+function closeNewMenu() {
+  els.newMenu?.classList.add("hidden");
+  els.newMenuToggle?.setAttribute("aria-expanded", "false");
+}
+
+function applyStatusCollection(status, label) {
+  state.status = status;
+  state.category = "";
+  state.subCategory = "";
+  state.search = "";
+  state.collectionLabel = label;
+  state.page = 1;
+  els.searchInput.value = "";
+  closeCategoriesMenu();
+  closeNewMenu();
+  loadProducts();
+  const catalogTop = els.searchForm
+    ? els.searchForm.getBoundingClientRect().top + window.scrollY - 145
+    : 300;
+  window.scrollTo({ top: Math.max(0, catalogTop), behavior: "smooth" });
+}
+
 function applyCategory(category, subCategory = "", options = {}) {
+  state.status = "";
   state.category = category;
   state.subCategory = subCategory;
   state.search = options.search || "";
@@ -765,13 +871,16 @@ async function loadProducts() {
   els.message.textContent = "Učitavanje proizvoda…";
   els.grid.innerHTML = "";
 
-  const params = new URLSearchParams({ page: String(state.page), limit: String(PAGE_LIMIT) });
+  const params = new URLSearchParams({ page: String(state.page), limit: String(state.status ? 32 : PAGE_LIMIT) });
   if (state.search) params.set("search", state.search);
   if (state.category) params.set("category", state.category);
   if (state.subCategory) params.set("subCategory", state.subCategory);
 
   try {
-    const response = await fetch(`${API_BASE}/products-grouped?${params}`, {
+    const endpoint = state.status
+      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&limit=32`
+      : `${API_BASE}/products-grouped?${params}`;
+    const response = await fetch(endpoint, {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -779,23 +888,24 @@ async function loadProducts() {
     if (!data.success) throw new Error(data.error || "Katalog trenutno nije dostupan.");
     if (requestId !== state.requestId) return;
 
-    state.page = data.page || 1;
-    state.totalPages = data.totalPages || 1;
+    state.page = state.status ? 1 : (data.page || 1);
+    state.totalPages = state.status ? 1 : (data.totalPages || 1);
     const total = Number(data.totalGroupedCards || 0);
-    const matches = Number(data.totalMatchingProducts || 0);
+    const matches = Number(state.status ? data.showing : (data.totalMatchingProducts || 0));
 
     els.apiStatus.textContent = "Katalog ažuriran";
-    els.heroTotal.textContent = total.toLocaleString("sr-RS");
+    if (!state.status) els.heroTotal.textContent = total.toLocaleString("sr-RS");
     els.totalMatches.textContent = matches.toLocaleString("sr-RS");
     const filterName = state.collectionLabel || (state.subCategory ? subCategoryLabel(state.subCategory) : categoryLabel(state.category));
-    els.resultsLabel.textContent = state.search ? `rezultata za „${state.search}”` : "proizvoda";
-    els.activeFilter.classList.toggle("hidden", !state.category);
+    els.resultsLabel.textContent = state.status ? "proizvoda u kolekciji" : (state.search ? `rezultata za „${state.search}”` : "proizvoda");
+    els.activeFilter.classList.toggle("hidden", !(state.category || state.status));
     els.activeFilterName.textContent = filterName || "";
-    els.pageInfo.textContent = `Strana ${state.page} od ${state.totalPages}`;
+    els.pageInfo.textContent = state.status ? state.collectionLabel : `Strana ${state.page} od ${state.totalPages}`;
     els.paginationText.textContent = `${state.page} / ${state.totalPages}`;
     els.prev.disabled = !data.hasPreviousPage;
     els.next.disabled = !data.hasNextPage;
     els.clearSearch.classList.toggle("hidden", !state.search);
+    els.pagination?.classList.toggle("hidden", Boolean(state.status));
 
     const products = Array.isArray(data.products) ? data.products : [];
     if (!products.length) {
@@ -817,6 +927,7 @@ async function loadProducts() {
 els.searchForm?.addEventListener("submit", event => {
   event.preventDefault();
   hideSearchSuggestions();
+  state.status = "";
   state.search = els.searchInput.value.trim();
   state.collectionLabel = "";
   state.page = 1;
@@ -848,6 +959,7 @@ document.addEventListener("pointerdown", event => {
 
 els.clearSearch?.addEventListener("click", () => {
   hideSearchSuggestions();
+  state.status = "";
   state.search = "";
   state.collectionLabel = "";
   state.page = 1;
@@ -856,6 +968,7 @@ els.clearSearch?.addEventListener("click", () => {
 });
 
 els.categoriesToggle?.addEventListener("click", () => {
+  closeNewMenu();
   const willOpen = els.categoriesMenu.classList.contains("hidden");
   if (willOpen && menuCategories.length) {
     menuSelection.categoryCode = state.category;
@@ -865,6 +978,19 @@ els.categoriesToggle?.addEventListener("click", () => {
   els.categoriesMenu.classList.toggle("hidden", !willOpen);
   els.categoriesToggle.setAttribute("aria-expanded", String(willOpen));
   document.body.classList.toggle("menu-open", willOpen);
+});
+
+els.newMenuToggle?.addEventListener("click", () => {
+  const willOpen = els.newMenu?.classList.contains("hidden");
+  closeCategoriesMenu();
+  els.newMenu?.classList.toggle("hidden", !willOpen);
+  els.newMenuToggle.setAttribute("aria-expanded", String(willOpen));
+});
+
+els.newMenu?.addEventListener("click", event => {
+  const target = event.target instanceof Element ? event.target.closest("[data-status-collection]") : null;
+  if (!target) return;
+  applyStatusCollection(target.dataset.statusCollection || "new", target.dataset.statusLabel || "Novo");
 });
 
 document.querySelectorAll(".quick-category").forEach(button => {
@@ -910,11 +1036,17 @@ els.categoriesGrid?.addEventListener("click", event => {
 
 els.clearCategory?.addEventListener("click", () => applyCategory("", ""));
 
-document.addEventListener("keydown", event => { if (event.key === "Escape") closeCategoriesMenu(); });
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeCategoriesMenu();
+    closeNewMenu();
+  }
+});
 document.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
-  if (!target || els.categoriesMenu.classList.contains("hidden")) return;
-  if (!els.categoriesMenu.contains(target) && !els.categoriesToggle.contains(target)) closeCategoriesMenu();
+  if (!target) return;
+  if (!els.categoriesMenu.classList.contains("hidden") && !els.categoriesMenu.contains(target) && !els.categoriesToggle.contains(target)) closeCategoriesMenu();
+  if (els.newMenu && !els.newMenu.classList.contains("hidden") && !els.newMenu.contains(target) && !els.newMenuToggle?.contains(target)) closeNewMenu();
 });
 
 els.prev?.addEventListener("click", () => {
