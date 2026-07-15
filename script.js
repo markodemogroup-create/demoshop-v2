@@ -878,10 +878,11 @@ async function loadProducts() {
 
   try {
     const endpoint = state.status
-      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&limit=32&v=5`
+      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&limit=32&v=6`
       : `${API_BASE}/products-grouped?${params}`;
     const response = await fetch(endpoint, {
       headers: { Accept: "application/json" },
+      cache: state.status ? "no-store" : "default",
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
