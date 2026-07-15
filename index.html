@@ -6,7 +6,7 @@
   <meta name="description" content="DemoShop katalog promotivnih proizvoda sa bojama, veličinama, cenama i lagerom.">
   <title>DemoShop — Katalog promotivnih proizvoda</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
-  <link rel="stylesheet" href="style.css?v=34">
+  <link rel="stylesheet" href="style.css?v=35">
   <link rel="stylesheet" href="catalog-taxonomy.css?v=13">
 </head>
 <body>
@@ -36,18 +36,21 @@
   </nav>
 
   <main>
-    <section class="catalog-hero">
+    <section class="catalog-hero" aria-label="Aktuelna ponuda">
       <div class="container hero-inner">
-        <div>
+        <div class="hero-copy-column">
           <p class="eyebrow">DEMO GROUP · PROMOTIVNI PROIZVODI</p>
           <h1>Pronađite proizvod za vaš brend.</h1>
           <p class="hero-copy">Jedan model, sve dostupne boje i veličine. Cena i lager proveravaju se direktno za izabranu varijantu.</p>
+          <div class="hero-catalog-count"><strong id="heroTotal">1.756</strong><span>grupisanih modela u aktuelnom katalogu</span></div>
           <div class="hero-actions">
             <a class="hero-action-primary" href="#izdvojeno">Pogledaj izdvojeno <span aria-hidden="true">↓</span></a>
             <a class="hero-action-secondary" href="#searchForm">Pretraži katalog</a>
           </div>
         </div>
-        <div class="hero-badge"><strong id="heroTotal">1.756</strong><span>grupisanih modela</span></div>
+        <div id="heroShowcase" class="hero-showcase" aria-live="polite" aria-label="Aktuelni noviteti">
+          <div class="hero-showcase-loading"><span></span><strong>Pripremamo aktuelne novitete…</strong></div>
+        </div>
       </div>
     </section>
 
@@ -146,6 +149,6 @@
   <footer class="site-footer"><div class="container">DemoShop · Demo Group katalog · Podaci se automatski osvežavaju</div></footer>
   <script src="cart-store.js?v=7"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=34"></script>
+  <script src="script.js?v=35"></script>
 </body>
 </html>

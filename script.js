@@ -23,6 +23,7 @@ const els = {
   prev: document.getElementById("prevPage"),
   next: document.getElementById("nextPage"),
   paginationText: document.getElementById("paginationText"),
+  heroShowcase: document.getElementById("heroShowcase"),
   newProductsGrid: document.getElementById("newProductsGrid"),
   newProductsMessage: document.getElementById("newProductsMessage"),
   newProductsPrev: document.getElementById("newProductsPrev"),
@@ -42,6 +43,8 @@ const state = {
 };
 
 const variantDetailCache = new Map();
+let heroSlideIndex = 0;
+let heroRotationTimer;
 let menuCategories = [];
 const menuSelection = { categoryCode: "", subCategoryCode: "" };
 
@@ -151,7 +154,7 @@ async function loadSearchSuggestions() {
       els.searchSuggestions.innerHTML = products.map((product, index) => {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
-        const href = `product.html?model=${encodeURIComponent(model)}&v=34`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=35`;
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
           <img class="search-suggestion-image" data-suggestion-index="${index}" alt="">
@@ -291,7 +294,7 @@ function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const imageIds = modelAssetIds(model, product.representativeCode);
   const modelImageId = imageIds[0] || "";
-  const href = `product.html?model=${encodeURIComponent(model)}&v=34`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=35`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
 
@@ -463,6 +466,138 @@ async function enrichCards(requestId, root = els.grid) {
   await Promise.all(Array.from({ length: DETAIL_CONCURRENCY }, worker));
 }
 
+function activateHeroSlide(index, restartRotation = true) {
+  if (!els.heroShowcase) return;
+  const slides = [...els.heroShowcase.querySelectorAll("[data-hero-slide]")];
+  if (!slides.length) return;
+
+  heroSlideIndex = (index + slides.length) % slides.length;
+  slides.forEach((slide, slideIndex) => {
+    const active = slideIndex === heroSlideIndex;
+    slide.classList.toggle("active", active);
+    slide.setAttribute("aria-hidden", String(!active));
+    slide.tabIndex = active ? 0 : -1;
+  });
+  els.heroShowcase.querySelectorAll("[data-hero-dot]").forEach((dot, dotIndex) => {
+    dot.classList.toggle("active", dotIndex === heroSlideIndex);
+    dot.setAttribute("aria-current", dotIndex === heroSlideIndex ? "true" : "false");
+  });
+
+  if (restartRotation) startHeroRotation();
+}
+
+function stopHeroRotation() {
+  window.clearInterval(heroRotationTimer);
+  heroRotationTimer = undefined;
+}
+
+function startHeroRotation() {
+  stopHeroRotation();
+  const slideCount = els.heroShowcase?.querySelectorAll("[data-hero-slide]").length || 0;
+  if (slideCount < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  heroRotationTimer = window.setInterval(() => activateHeroSlide(heroSlideIndex + 1, false), 6500);
+}
+
+async function renderHeroShowcase(products) {
+  if (!els.heroShowcase) return;
+  stopHeroRotation();
+
+  if (!products.length) {
+    els.heroShowcase.innerHTML = `
+      <div class="hero-showcase-fallback">
+        <span>DEMO GROUP</span>
+        <strong>Vaš brend na pravom proizvodu.</strong>
+        <p>Pregledajte aktuelni katalog i pošaljite upit bez obaveze.</p>
+      </div>`;
+    return;
+  }
+
+  const enriched = await Promise.all(products.slice(0, 8).map(async product => ({
+    product,
+    detail: await fetchVariantDetail(product.representativeVariantId),
+  })));
+  const slides = enriched
+    .filter(item => item.detail?.image || modelAssetIds(item.product.modelCode, item.product.representativeCode).length)
+    .sort((a, b) => Number(b.detail?.stock > 0) - Number(a.detail?.stock > 0))
+    .slice(0, 5);
+
+  if (!slides.length) return renderHeroShowcase([]);
+
+  els.heroShowcase.innerHTML = `
+    <div class="hero-product-slides">
+      ${slides.map(({ product, detail }, index) => {
+        const model = product.modelCode || "";
+        const display = productDisplayName(product.name);
+        const imageIds = modelAssetIds(model, product.representativeCode);
+        const modelImage = imageIds[0]
+          ? `https://apiv2.promosolution.services/content/ModelItem/${imageIds[0]}_000.webp`
+          : "";
+        const primaryImage = modelImage || detail?.image || "";
+        const stockState = cardStockState(detail?.stock);
+        const href = `product.html?model=${encodeURIComponent(model)}&v=35`;
+
+        return `<a class="hero-product-slide ${index === 0 ? "active" : ""}" data-hero-slide="${index}"
+          href="${href}" aria-hidden="${index === 0 ? "false" : "true"}" tabindex="${index === 0 ? "0" : "-1"}">
+          <span class="hero-product-kicker">NOVO U KATALOGU</span>
+          <div class="hero-product-image">
+            <img src="${escapeHtml(primaryImage)}" data-fallback="${escapeHtml(detail?.image || "")}" alt="${escapeHtml(display.title)}">
+          </div>
+          <div class="hero-product-copy">
+            <small>Model ${escapeHtml(model)}</small>
+            <strong>${escapeHtml(display.title)}</strong>
+            ${display.description ? `<p>${escapeHtml(display.description)}</p>` : ""}
+            <div class="hero-product-meta">
+              <b>${formatPrice(detail?.price)}</b>
+              <span class="hero-product-stock hero-product-stock-${stockState.className}">${escapeHtml(stockState.label)} · ${escapeHtml(stockState.amount)}</span>
+            </div>
+            <em>Pogledaj proizvod <b aria-hidden="true">→</b></em>
+          </div>
+        </a>`;
+      }).join("")}
+    </div>
+    <div class="hero-showcase-controls">
+      <button type="button" data-hero-prev aria-label="Prethodni proizvod">←</button>
+      <div class="hero-showcase-dots">
+        ${slides.map((_, index) => `<button type="button" class="${index === 0 ? "active" : ""}" data-hero-dot="${index}" aria-label="Prikaži proizvod ${index + 1}" aria-current="${index === 0 ? "true" : "false"}"></button>`).join("")}
+      </div>
+      <button type="button" data-hero-next aria-label="Sledeći proizvod">→</button>
+    </div>`;
+
+  els.heroShowcase.querySelectorAll(".hero-product-image img").forEach(image => {
+    image.onerror = () => {
+      const fallback = image.dataset.fallback || "";
+      if (fallback && image.src !== fallback) {
+        image.src = fallback;
+      } else {
+        image.closest(".hero-product-image")?.classList.add("no-image");
+        image.remove();
+      }
+    };
+  });
+
+  els.heroShowcase.querySelector("[data-hero-prev]")?.addEventListener("click", event => {
+    event.preventDefault();
+    activateHeroSlide(heroSlideIndex - 1);
+  });
+  els.heroShowcase.querySelector("[data-hero-next]")?.addEventListener("click", event => {
+    event.preventDefault();
+    activateHeroSlide(heroSlideIndex + 1);
+  });
+  els.heroShowcase.querySelectorAll("[data-hero-dot]").forEach(dot => {
+    dot.addEventListener("click", event => {
+      event.preventDefault();
+      activateHeroSlide(Number(dot.dataset.heroDot || 0));
+    });
+  });
+  els.heroShowcase.addEventListener("pointerenter", stopHeroRotation);
+  els.heroShowcase.addEventListener("pointerleave", startHeroRotation);
+  els.heroShowcase.addEventListener("focusin", stopHeroRotation);
+  els.heroShowcase.addEventListener("focusout", startHeroRotation);
+
+  activateHeroSlide(0, false);
+  startHeroRotation();
+}
+
 async function loadNewProducts() {
   if (!els.newProductsGrid) return;
 
@@ -477,14 +612,17 @@ async function loadNewProducts() {
     const products = Array.isArray(data.products) ? data.products : [];
     if (!products.length) {
       els.newProductsMessage.textContent = "Novi proizvodi se trenutno ažuriraju.";
+      renderHeroShowcase([]);
       return;
     }
 
     els.newProductsMessage.classList.add("hidden");
     els.newProductsGrid.innerHTML = products.map(cardTemplate).join("");
     enrichCards(null, els.newProductsGrid);
+    renderHeroShowcase(products);
   } catch (error) {
     els.newProductsMessage.textContent = "Noviteti će se pojaviti nakon sledećeg osvežavanja kataloga.";
+    renderHeroShowcase([]);
     console.error("Noviteti nisu dostupni", error);
   }
 }
