@@ -239,8 +239,15 @@ function formatPrice(value) {
 function productBadgeState(detail) {
   const statuses = Array.isArray(detail?.statuses) ? detail.statuses : [];
   const printMethods = Array.isArray(detail?.printMethods) ? detail.printMethods : [];
+  const specifications = Array.isArray(detail?.specifications) ? detail.specifications : [];
+  const certificates = Array.isArray(detail?.certificates) ? detail.certificates : [];
   const statusNames = statuses.map(item => String(item?.name || "").trim());
   const printNames = printMethods.map(item => String(item?.name || "").trim());
+  const badgeText = [...statuses, ...printMethods, ...specifications, ...certificates]
+    .map(item => `${item?.name || ""} ${item?.value || ""}`)
+    .join(" ");
+  const originCode = String(detail?.logistics?.originCode || "").trim().toUpperCase();
+  const originName = String(detail?.logistics?.originName || "").trim();
 
   return {
     isNew: Boolean(detail?.badges?.isNew) || statusNames.some(name => /^(novo|new)$/i.test(name)),
@@ -249,6 +256,9 @@ function productBadgeState(detail) {
     ),
     isHitPrice: Boolean(detail?.badges?.isHitPrice) || Boolean(detail?.discount) || statusNames.some(name => /hit\s*cena/i.test(name)),
     isOrganic: Boolean(detail?.badges?.isOrganic) || [...statusNames, ...printNames].some(name => /organi(c|k)|organski\s+pamuk/i.test(name)),
+    isSwissMade: Boolean(detail?.badges?.isSwissMade) || /^(CH|CHE)$/.test(originCode) || /(?:swiss\s*made|switzerland|švajcarsk|svajcarsk)/i.test(`${originName} ${badgeText}`),
+    isMadeInItaly: Boolean(detail?.badges?.isMadeInItaly) || /^(IT|ITA)$/.test(originCode) || /(?:made\s+in\s+italy|italija|italy|italian)/i.test(`${originName} ${badgeText}`),
+    isRpet: Boolean(detail?.badges?.isRpet) || /(?:\br\s*-?pet\b|recycled\s+pet|recikliran\w*\s+pet)/i.test(badgeText),
   };
 }
 
@@ -259,6 +269,9 @@ function productBadgesHtml(detail) {
     badges.isSublimation ? '<span class="status-badge status-sublimation" title="Pogodno za sublimaciju">S</span>' : "",
     badges.isHitPrice ? '<span class="status-badge status-hit" title="Hit cena">%</span>' : "",
     badges.isOrganic ? '<span class="status-badge status-organic" title="Organski pamuk"><i aria-hidden="true"></i>ORGANIC</span>' : "",
+    badges.isSwissMade ? '<span class="status-badge status-origin status-swiss" title="Swiss Made"><i aria-hidden="true"></i><b>SWISS</b><small>MADE</small></span>' : "",
+    badges.isMadeInItaly ? '<span class="status-badge status-origin status-italy" title="Made in Italy"><i aria-hidden="true"></i><b>MADE IN</b><small>ITALY</small></span>' : "",
+    badges.isRpet ? '<span class="status-badge status-rpet" title="Proizvedeno od recikliranog PET materijala"><b>RPET</b></span>' : "",
   ].filter(Boolean).join("");
 }
 
@@ -384,7 +397,7 @@ async function fetchVariantDetail(id) {
   if (!id) return null;
   if (variantDetailCache.has(id)) return variantDetailCache.get(id);
 
-  const detailPromise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}`, {
+  const detailPromise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=43`, {
     headers: { Accept: "application/json" },
   })
     .then(async response => {
@@ -878,7 +891,7 @@ async function loadProducts() {
 
   try {
     const endpoint = state.status
-      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&limit=32&v=7`
+      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=43`
       : `${API_BASE}/products-grouped?${params}`;
     const response = await fetch(endpoint, {
       headers: { Accept: "application/json" },
@@ -889,10 +902,10 @@ async function loadProducts() {
     if (!data.success) throw new Error(data.error || "Katalog trenutno nije dostupan.");
     if (requestId !== state.requestId) return;
 
-    state.page = state.status ? 1 : (data.page || 1);
-    state.totalPages = state.status ? 1 : (data.totalPages || 1);
+    state.page = data.page || 1;
+    state.totalPages = data.totalPages || 1;
     const total = Number(data.totalGroupedCards || 0);
-    const matches = Number(state.status ? data.showing : (data.totalMatchingProducts || 0));
+    const matches = Number(data.totalMatchingProducts || 0);
 
     els.apiStatus.textContent = "Katalog ažuriran";
     if (!state.status) els.heroTotal.textContent = total.toLocaleString("sr-RS");
@@ -901,12 +914,14 @@ async function loadProducts() {
     els.resultsLabel.textContent = state.status ? "proizvoda u kolekciji" : (state.search ? `rezultata za „${state.search}”` : "proizvoda");
     els.activeFilter.classList.toggle("hidden", !(state.category || state.status));
     els.activeFilterName.textContent = filterName || "";
-    els.pageInfo.textContent = state.status ? state.collectionLabel : `Strana ${state.page} od ${state.totalPages}`;
+    els.pageInfo.textContent = state.status
+      ? `${state.collectionLabel} · Strana ${state.page} od ${state.totalPages}`
+      : `Strana ${state.page} od ${state.totalPages}`;
     els.paginationText.textContent = `${state.page} / ${state.totalPages}`;
     els.prev.disabled = !data.hasPreviousPage;
     els.next.disabled = !data.hasNextPage;
     els.clearSearch.classList.toggle("hidden", !state.search);
-    els.pagination?.classList.toggle("hidden", Boolean(state.status));
+    els.pagination?.classList.toggle("hidden", state.totalPages <= 1);
 
     const products = Array.isArray(data.products) ? data.products : [];
     if (!products.length) {

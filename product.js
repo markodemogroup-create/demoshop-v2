@@ -64,7 +64,7 @@ const detailCache = new Map();
 async function getVariantDetail(id) {
   if (!id) return null;
   if (detailCache.has(id)) return detailCache.get(id);
-  const promise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}`, {
+  const promise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=43`, {
     headers: { Accept: "application/json" },
   }).then(async response => {
     if (!response.ok) return null;
@@ -98,19 +98,32 @@ function formatPrice(value) {
 function productBadgesHtml(detail) {
   const statuses = Array.isArray(detail?.statuses) ? detail.statuses : [];
   const printMethods = Array.isArray(detail?.printMethods) ? detail.printMethods : [];
+  const specifications = Array.isArray(detail?.specifications) ? detail.specifications : [];
+  const certificates = Array.isArray(detail?.certificates) ? detail.certificates : [];
   const statusNames = statuses.map(item => String(item?.name || "").trim());
+  const badgeText = [...statuses, ...printMethods, ...specifications, ...certificates]
+    .map(item => `${item?.name || ""} ${item?.value || ""}`)
+    .join(" ");
+  const originCode = String(detail?.logistics?.originCode || "").trim().toUpperCase();
+  const originName = String(detail?.logistics?.originName || "").trim();
   const isNew = Boolean(detail?.badges?.isNew) || statusNames.some(name => /^(novo|new)$/i.test(name));
   const isSublimation = Boolean(detail?.badges?.isSublimation) || printMethods.some(item =>
     Number(item?.id) === 381 || /sublimacij/i.test(String(item?.name || ""))
   );
   const isHitPrice = Boolean(detail?.badges?.isHitPrice) || Boolean(detail?.discount) || statusNames.some(name => /hit\s*cena/i.test(name));
   const isOrganic = Boolean(detail?.badges?.isOrganic) || [...statusNames, ...printMethods.map(item => String(item?.name || ""))].some(name => /organi(c|k)|organski\s+pamuk/i.test(name));
+  const isSwissMade = Boolean(detail?.badges?.isSwissMade) || /^(CH|CHE)$/.test(originCode) || /(?:swiss\s*made|switzerland|švajcarsk|svajcarsk)/i.test(`${originName} ${badgeText}`);
+  const isMadeInItaly = Boolean(detail?.badges?.isMadeInItaly) || /^(IT|ITA)$/.test(originCode) || /(?:made\s+in\s+italy|italija|italy|italian)/i.test(`${originName} ${badgeText}`);
+  const isRpet = Boolean(detail?.badges?.isRpet) || /(?:\br\s*-?pet\b|recycled\s+pet|recikliran\w*\s+pet)/i.test(badgeText);
 
   return [
     isNew ? '<span class="status-badge status-new">NEW</span>' : "",
     isSublimation ? '<span class="status-badge status-sublimation" title="Pogodno za sublimaciju">S</span>' : "",
     isHitPrice ? '<span class="status-badge status-hit" title="Hit cena">%</span>' : "",
     isOrganic ? '<span class="status-badge status-organic" title="Organski pamuk"><i aria-hidden="true"></i>ORGANIC</span>' : "",
+    isSwissMade ? '<span class="status-badge status-origin status-swiss" title="Swiss Made"><i aria-hidden="true"></i><b>SWISS</b><small>MADE</small></span>' : "",
+    isMadeInItaly ? '<span class="status-badge status-origin status-italy" title="Made in Italy"><i aria-hidden="true"></i><b>MADE IN</b><small>ITALY</small></span>' : "",
+    isRpet ? '<span class="status-badge status-rpet" title="Proizvedeno od recikliranog PET materijala"><b>RPET</b></span>' : "",
   ].filter(Boolean).join("");
 }
 
