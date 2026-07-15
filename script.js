@@ -397,7 +397,7 @@ async function fetchVariantDetail(id) {
   if (!id) return null;
   if (variantDetailCache.has(id)) return variantDetailCache.get(id);
 
-  const detailPromise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=44`, {
+  const detailPromise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=45`, {
     headers: { Accept: "application/json" },
   })
     .then(async response => {
@@ -891,7 +891,7 @@ async function loadProducts() {
 
   try {
     const endpoint = state.status
-      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=44`
+      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=45`
       : `${API_BASE}/products-grouped?${params}`;
     const response = await fetch(endpoint, {
       headers: { Accept: "application/json" },
