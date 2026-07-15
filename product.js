@@ -667,7 +667,7 @@ async function loadRelatedProducts() {
       const model = item.modelCode || "";
       const imageIds = modelAssetIds(model, item.representativeCode);
       const modelImageId = imageIds[0] || "";
-      const href = `product.html?model=${encodeURIComponent(model)}&v=36`;
+      const href = `product.html?model=${encodeURIComponent(model)}&v=38`;
       const image = modelImageId ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp` : "";
       return `<article class="related-product-card" data-index="${index}" data-detail-id="${escapeHtml(item.representativeVariantId || "")}">
         <a class="related-product-media" href="${href}">
