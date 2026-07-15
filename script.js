@@ -158,7 +158,7 @@ async function loadSearchSuggestions() {
       els.searchSuggestions.innerHTML = products.map((product, index) => {
         const display = productDisplayName(product.name);
         const model = product.modelCode || "";
-        const href = `product.html?model=${encodeURIComponent(model)}&v=38`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=39`;
         return `<a class="search-suggestion" role="option" href="${href}">
           <span class="search-suggestion-copy"><strong>${highlightSearchMatch(display.title, query)}</strong><small>${highlightSearchMatch(model, query)}</small>${display.description ? `<em>${highlightSearchMatch(display.description, query)}</em>` : ""}</span>
           <img class="search-suggestion-image" data-suggestion-index="${index}" alt="">
@@ -338,7 +338,7 @@ function cardTemplate(product, index) {
   const model = product.modelCode || "";
   const imageIds = modelAssetIds(model, product.representativeCode);
   const modelImageId = imageIds[0] || "";
-  const href = `product.html?model=${encodeURIComponent(model)}&v=38`;
+  const href = `product.html?model=${encodeURIComponent(model)}&v=39`;
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
   const previews = variantPreviewItems(product);
@@ -617,7 +617,7 @@ async function renderHeroShowcase(products) {
           : "";
         const primaryImage = modelImage || detail?.image || "";
         const stockState = cardStockState(detail?.stock);
-        const href = `product.html?model=${encodeURIComponent(model)}&v=38`;
+        const href = `product.html?model=${encodeURIComponent(model)}&v=39`;
 
         return `<a class="hero-product-slide ${index === 0 ? "active" : ""}" data-hero-slide="${index}"
           href="${href}" aria-hidden="${index === 0 ? "false" : "true"}" tabindex="${index === 0 ? "0" : "-1"}">
@@ -878,7 +878,7 @@ async function loadProducts() {
 
   try {
     const endpoint = state.status
-      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&limit=32&v=3`
+      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&limit=32&v=5`
       : `${API_BASE}/products-grouped?${params}`;
     const response = await fetch(endpoint, {
       headers: { Accept: "application/json" },
