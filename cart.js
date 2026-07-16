@@ -7,6 +7,36 @@ const subtotalElement = document.getElementById("cartSubtotal");
 const vatElement = document.getElementById("cartVat");
 const totalElement = document.getElementById("cartTotal");
 const formMessage = document.getElementById("formMessage");
+const DRAFT_KEY = "demoshop_quote_customer_draft_v1";
+const draftFields = ["customerName", "customerCompany", "customerPib", "customerEmail", "customerPhone", "customerAddress", "customerNote"];
+
+function editUrl(item, index) {
+  const url = new URL("product.html", window.location.href);
+  url.searchParams.set("model", item.modelCode || "");
+  if (item.colorCode) url.searchParams.set("shade", item.colorCode);
+  url.searchParams.set("editCart", String(index));
+  return `${url.pathname.split("/").pop()}${url.search}`;
+}
+
+function saveDraft() {
+  const draft = Object.fromEntries(draftFields.map(id => [id, document.getElementById(id)?.value || ""]));
+  draft.customerType = document.querySelector('input[name="customerType"]:checked')?.value || "Pravno lice";
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+}
+
+function restoreDraft() {
+  try {
+    const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}");
+    draftFields.forEach(id => {
+      const field = document.getElementById(id);
+      if (field && typeof draft[id] === "string") field.value = draft[id];
+    });
+    const type = [...document.querySelectorAll('input[name="customerType"]')].find(input => input.value === draft.customerType);
+    if (type) type.checked = true;
+  } catch {
+    localStorage.removeItem(DRAFT_KEY);
+  }
+}
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -27,11 +57,13 @@ function render() {
     const hasPrice = Number.isFinite(price) && price > 0;
     const step = Math.max(1, Number(item.packStep) || 1);
     const packages = Math.max(1, Math.round(Number(item.quantity) / step));
+    const url = editUrl(item, index);
     return `<article class="cart-item">
-      <div class="cart-item-image">${item.image ? `<img src="${escapeHtml(item.image)}" alt="">` : ""}</div>
-      <div class="cart-item-info"><p>${escapeHtml(item.modelCode)}</p><h2>${escapeHtml(item.name)}</h2>
+      <a class="cart-item-image cart-edit-link" href="${escapeHtml(url)}" aria-label="Izmeni ${escapeHtml(item.name)}">${item.image ? `<img src="${escapeHtml(item.image)}" alt="">` : ""}</a>
+      <div class="cart-item-info"><p>${escapeHtml(item.modelCode)}</p><h2><a class="cart-edit-link" href="${escapeHtml(url)}">${escapeHtml(item.name)}</a></h2>
         <span>${escapeHtml(item.code)}${item.colorCode ? ` · boja ${escapeHtml(item.colorCode)}` : ""}${item.size ? ` · ${escapeHtml(item.size)}` : ""}</span>
-        <small>${Number(item.quantity).toLocaleString("sr-RS")} kom. · ${packages} pak. po ${step.toLocaleString("sr-RS")} kom.</small></div>
+        <small>${Number(item.quantity).toLocaleString("sr-RS")} kom. · ${packages} pak. po ${step.toLocaleString("sr-RS")} kom.</small>
+        <a class="cart-edit-action" href="${escapeHtml(url)}">Izmeni boju ili veličinu →</a></div>
       <div class="cart-quantity-stepper" aria-label="Količina">
         <button type="button" data-cart-change="-1" data-index="${index}" aria-label="Smanji količinu">−</button>
         <output>${Number(item.quantity).toLocaleString("sr-RS")}</output>
@@ -102,6 +134,7 @@ document.getElementById("sendQuote").addEventListener("click", async () => {
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.success) throw new Error(data.error || "Upit nije poslat.");
     window.DemoCart.write([]);
+    localStorage.removeItem(DRAFT_KEY);
     render();
     formMessage.textContent = data.quoteReference ? `Upit ${data.quoteReference} je uspešno poslat.` : "Upit je uspešno poslat na Demo Group email.";
     formMessage.classList.add("form-success");
@@ -114,4 +147,7 @@ document.getElementById("sendQuote").addEventListener("click", async () => {
   }
 });
 
+restoreDraft();
+summaryElement?.addEventListener("input", saveDraft);
+summaryElement?.addEventListener("change", saveDraft);
 render();

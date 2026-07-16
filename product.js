@@ -2,6 +2,9 @@ const API_BASE = "https://demo-group-api.marko-demogroup.workers.dev";
 const params = new URLSearchParams(window.location.search);
 const requestedModel = params.get("model");
 const requestedShade = params.get("shade");
+const editCartIndex = Number.parseInt(params.get("editCart"), 10);
+const editMode = Number.isInteger(editCartIndex) && editCartIndex >= 0;
+const editCartItem = editMode ? window.DemoCart?.read()?.[editCartIndex] : null;
 
 const elements = {
   message: document.getElementById("productMessage"),
@@ -69,6 +72,11 @@ let activePackageStep = 1;
 let activePackageMaximum = null;
 let activeQuantity = 1;
 
+if (editMode && !editCartItem) {
+  params.delete("editCart");
+  window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+}
+
 async function getVariantDetail(id) {
   if (!id) return null;
   if (detailCache.has(id)) return detailCache.get(id);
@@ -135,6 +143,9 @@ function configurePackaging(detail) {
   activePackageMaximum = Number.isFinite(stock) && stock > 0 ? Math.floor(stock / activePackageStep) * activePackageStep : null;
   if (activePackageMaximum !== null && activePackageMaximum < activePackageStep) activePackageMaximum = null;
   activeQuantity = activePackageStep;
+  if (editCartItem) {
+    activeQuantity = Math.max(activePackageStep, Math.ceil(Number(editCartItem.quantity || activePackageStep) / activePackageStep) * activePackageStep);
+  }
   if (elements.packageHint) {
     elements.packageHint.textContent = activePackageStep > 1
       ? `Minimalna količina i korak: ${activePackageStep.toLocaleString("sr-RS")} kom.`
@@ -659,7 +670,11 @@ function renderSizes(variants = []) {
     button.addEventListener("click", () => selectVariant(variants[Number(button.dataset.index)]));
   });
   renderVariantTable(variants);
-  selectVariant(variants[0]);
+  const editVariant = editCartItem
+    ? variants.find(variant => String(variant.id) === String(editCartItem.id))
+      || variants.find(variant => String(variant.size || "") === String(editCartItem.size || ""))
+    : null;
+  selectVariant(editVariant || variants[0]);
 }
 
 function selectColor(colorCode, updateUrl = true) {
@@ -810,6 +825,10 @@ async function loadProduct() {
     elements.breadcrumb.textContent = [product.category, product.subCategory].filter(Boolean).join(" / ");
     elements.name.textContent = display.title;
     elements.model.textContent = product.modelCode || requestedModel;
+    if (editCartItem) {
+      elements.quoteButton.textContent = "Sačuvaj izmenu";
+      elements.cartFeedback.textContent = "Izmenite boju ili veličinu. Postojeća stavka u upitu biće zamenjena.";
+    }
     renderColors(product.colors || []);
     elements.detail.classList.remove("hidden");
     hideMessage();
@@ -832,7 +851,7 @@ elements.quoteButton.addEventListener("click", () => {
     return;
   }
   const quantity = activeQuantity;
-  window.DemoCart.add({
+  const cartItem = {
     id: String(selectedVariant.id),
     modelCode: product?.modelCode || requestedModel || "",
     name: product?.name || loadedVariantDetail.name || "Proizvod",
@@ -846,7 +865,12 @@ elements.quoteButton.addEventListener("click", () => {
     quantity,
     packStep: activePackageStep,
     maxStock: Number(loadedVariantDetail.stock) || null,
-  });
+  };
+  if (editCartItem && window.DemoCart.replace(editCartIndex, cartItem)) {
+    window.location.href = "cart.html";
+    return;
+  }
+  window.DemoCart.add(cartItem);
   elements.cartFeedback.innerHTML = `Dodato u upit: <strong>${quantity} kom.</strong> <a href="cart.html">Otvori upit →</a>`;
 });
 

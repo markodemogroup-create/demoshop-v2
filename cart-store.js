@@ -57,6 +57,23 @@
     openDrawer();
   }
 
+  function replace(index, item) {
+    const items = read();
+    if (!items[index]) return false;
+    const normalized = normalizeItem(item);
+    items.splice(index, 1);
+    const existing = items.find(entry => String(entry.id) === String(normalized.id));
+    if (existing) {
+      Object.assign(existing, normalized, {
+        quantity: normalizeItem({ ...normalized, quantity: existing.quantity + normalized.quantity }).quantity,
+      });
+    } else {
+      items.splice(Math.min(index, items.length), 0, normalized);
+    }
+    write(items);
+    return true;
+  }
+
   function change(index, direction) {
     const items = read();
     const item = items[index];
@@ -158,7 +175,7 @@
     if (event.key === "Escape") closeDrawer();
   });
 
-  window.DemoCart = { read, write, add, change, remove, openDrawer, closeDrawer, updateBadges, VAT_RATE };
+  window.DemoCart = { read, write, add, replace, change, remove, openDrawer, closeDrawer, updateBadges, VAT_RATE };
   ensureDrawer();
   updateBadges();
   renderDrawer();
