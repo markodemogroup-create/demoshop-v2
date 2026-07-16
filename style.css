@@ -197,4 +197,5 @@
 .promo-banner-image-slide img{display:block;width:100%;height:100%;object-fit:fill}
 .promo-banner-dots{max-width:min(68vw,520px);overflow:hidden}
 .promo-banner-dots button{flex:0 0 auto}
+.portfolio-nav-link{margin-left:auto;padding:10px 13px;border-radius:8px;color:var(--ink);font-size:12px;font-weight:850;text-decoration:none;white-space:nowrap}.portfolio-nav-link:hover{background:var(--soft);color:var(--red)}
 @media(max-width:700px){.promo-banner-viewport{aspect-ratio:3/1;min-height:0;border-radius:10px}.promo-banner-slide.promo-banner-image-slide{padding:0}.promo-banner-image-slide>a{border-radius:10px}.promo-banner-controls{height:46px;gap:10px}.promo-banner-dots{gap:5px;max-width:66vw}.promo-banner-dots button{width:6px;height:6px}.promo-banner-dots button.active{width:18px}}
