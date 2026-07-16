@@ -8,6 +8,7 @@
   let timer;
   let requestId = 0;
   let activeIndex = -1;
+  const detailCache = new Map();
 
   const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
@@ -28,6 +29,67 @@
     items[activeIndex]?.scrollIntoView({ block: "nearest" });
   }
 
+  function modelAssetIds(...values) {
+    return [...new Set(values.filter(Boolean).flatMap(value => {
+      const code = String(value).trim().replace(/-(?:XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|[2-9]XL|[0-9]{2,3})$/i, "");
+      const parts = code.split(".").filter(Boolean);
+      const candidates = [code.replace(/[^a-zA-Z0-9]/g, "")];
+      if (parts.length >= 3 && /^\d{1,4}$/.test(parts.at(-1))) {
+        candidates.unshift(parts.slice(0, -1).join("").replace(/[^a-zA-Z0-9]/g, ""));
+      }
+      return candidates;
+    }).filter(Boolean))];
+  }
+
+  async function getVariantDetail(id) {
+    if (!id) return null;
+    if (detailCache.has(id)) return detailCache.get(id);
+    const promise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=49`, {
+      headers: { Accept: "application/json" },
+    }).then(async response => {
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.success ? data.variant : null;
+    }).catch(() => null);
+    detailCache.set(id, promise);
+    return promise;
+  }
+
+  function loadImageFromCandidates(image, candidates) {
+    const urls = [...new Set(candidates.filter(Boolean))];
+    let cursor = 0;
+    const tryNext = () => {
+      const url = urls[cursor++];
+      if (!url) {
+        image.hidden = true;
+        image.removeAttribute("src");
+        return;
+      }
+      image.hidden = false;
+      image.classList.remove("loaded");
+      image.onload = () => image.classList.add("loaded");
+      image.onerror = tryNext;
+      image.src = url;
+    };
+    tryNext();
+  }
+
+  async function hydrateImages(products, currentRequest) {
+    await Promise.all(products.map(async (product, index) => {
+      const detail = await getVariantDetail(product.representativeVariantId);
+      if (currentRequest !== requestId) return;
+      const image = suggestions.querySelector(`[data-header-suggestion-image="${index}"]`);
+      if (!image) return;
+      const modelImages = modelAssetIds(product.modelCode, product.representativeCode)
+        .map(id => `https://apiv2.promosolution.services/content/ModelItem/${id}_000.webp`);
+      loadImageFromCandidates(image, [
+        ...modelImages,
+        detail?.image,
+        ...(Array.isArray(detail?.images) ? detail.images : []),
+      ]);
+    }));
+  }
+
   async function loadSuggestions() {
     const query = input.value.trim();
     if (query.length < 2) return closeSuggestions();
@@ -42,20 +104,19 @@
       const products = Array.isArray(data.products) ? data.products : [];
 
       suggestions.innerHTML = products.length
-        ? products.map(product => {
+        ? products.map((product, index) => {
             const model = String(product.modelCode || "");
             const title = String(product.name || model || "Proizvod").split(",")[0];
-            const rawId = String(product.representativeVariantId || "").split("-")[0].replace(/[^a-zA-Z0-9]/g, "");
-            const image = rawId ? `https://apiv2.promosolution.services/content/ModelItem/${rawId}_001.webp` : "";
-            return `<a class="search-suggestion" role="option" href="product.html?model=${encodeURIComponent(model)}&v=56">
+            return `<a class="search-suggestion" role="option" href="product.html?model=${encodeURIComponent(model)}&v=57">
               <span class="search-suggestion-copy"><strong>${escapeHtml(title)}</strong><small>Model ${escapeHtml(model)}</small></span>
-              ${image ? `<img class="search-suggestion-image" src="${image}" alt="" loading="lazy">` : ""}
+              <img class="search-suggestion-image" data-header-suggestion-image="${index}" alt="">
             </a>`;
           }).join("")
         : '<div class="search-suggestion-empty">Nema pronađenih proizvoda.</div>';
       suggestions.classList.remove("hidden");
       input.setAttribute("aria-expanded", "true");
       activeIndex = -1;
+      hydrateImages(products, currentRequest);
     } catch {
       closeSuggestions();
     }
