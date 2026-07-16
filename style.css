@@ -187,3 +187,14 @@
 @media(max-width:900px){.new-products-track .product-card{flex-basis:calc((100% - 32px)/3)}.promo-story{height:270px}}
 @media(max-width:700px){.new-products-track .product-card{flex-basis:min(78vw,290px)}.home-promo-stories{padding-bottom:35px}.promo-stories-heading{align-items:center}.promo-stories-heading .eyebrow{display:none}.promo-stories-heading h2{font-size:29px}.promo-stories-arrows button{width:38px;height:38px}.promo-stories-track{gap:12px}.promo-story{flex-basis:min(84vw,330px);height:260px;padding:20px}.promo-story>strong{font-size:23px}.promo-stories-dots{justify-content:flex-start}.promo-story img{width:60%}}
 @media(prefers-reduced-motion:reduce){.new-products-track,.promo-stories-track,.promo-story img{transition:none!important}}
+
+/* v52: originalni slikovni PromoBox baneri (privremeni DemoShop sadržaj) */
+.promo-banner-viewport{height:auto;aspect-ratio:3/1;border-radius:14px;background:#f2f3f5}
+.promo-banner-slide.promo-banner-image-slide{display:block;padding:0;background:#f2f3f5;transform:translateX(28px);transition:opacity .45s ease,transform .58s cubic-bezier(.2,.75,.2,1),visibility .45s}
+.promo-banner-slide.promo-banner-image-slide.active{transform:translateX(0)}
+.promo-banner-slide.promo-banner-image-slide:before,.promo-banner-slide.promo-banner-image-slide:after{display:none}
+.promo-banner-image-slide>a{display:block;width:100%;height:100%;overflow:hidden;border-radius:14px;background:#f2f3f5}
+.promo-banner-image-slide img{display:block;width:100%;height:100%;object-fit:fill}
+.promo-banner-dots{max-width:min(68vw,520px);overflow:hidden}
+.promo-banner-dots button{flex:0 0 auto}
+@media(max-width:700px){.promo-banner-viewport{aspect-ratio:3/1;min-height:0;border-radius:10px}.promo-banner-slide.promo-banner-image-slide{padding:0}.promo-banner-image-slide>a{border-radius:10px}.promo-banner-controls{height:46px;gap:10px}.promo-banner-dots{gap:5px;max-width:66vw}.promo-banner-dots button{width:6px;height:6px}.promo-banner-dots button.active{width:18px}}

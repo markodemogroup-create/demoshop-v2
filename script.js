@@ -2,6 +2,17 @@ const API_BASE = "https://demo-group-api.marko-demogroup.workers.dev";
 const PAGE_LIMIT = 20;
 const DETAIL_CONCURRENCY = 4;
 
+const CUSTOM_COLLECTIONS = {
+  "swiss-pens": { label: "Swiss Made olovke", terms: ["10.222", "10.220", "10.218", "10.217"] },
+  "eco-writing": { label: "KIND SOFT i ZED", terms: ["10.216", "10.215", "10.214"] },
+  "business-notes": { label: "DOMINGO A5 i FUTRO", terms: ["DOMINGO A5", "FUTRO"] },
+  pigna: { label: "PIGNA kolekcija", terms: ["44.185", "44.184", "44.183"] },
+  "summer-picks": { label: "Letnja kolekcija", terms: ["32.321", "37.018"] },
+  "target-shirts": { label: "TARGET kolekcija", terms: ["50.070", "50.071", "50.072"] },
+  "edison-baracuda": { label: "EDISON i BARACUDA", terms: ["38.215", "38.216"] },
+  "everyday-bags": { label: "Kolekcija torbi", terms: ["34.782", "34.783"] },
+};
+
 const els = {
   apiStatus: document.getElementById("apiStatus"),
   heroTotal: document.getElementById("heroTotal"),
@@ -48,6 +59,7 @@ const state = {
   page: 1,
   totalPages: 1,
   search: "",
+  collection: "",
   category: "",
   subCategory: "",
   collectionLabel: "",
@@ -72,8 +84,10 @@ const menuSelection = { categoryCode: "", subCategoryCode: "" };
 
 const initialUrlParams = new URLSearchParams(window.location.search);
 state.search = initialUrlParams.get("search") || "";
+state.collection = initialUrlParams.get("collection") || "";
 state.category = initialUrlParams.get("category") || "";
 state.subCategory = initialUrlParams.get("subCategory") || "";
+if (CUSTOM_COLLECTIONS[state.collection]) state.collectionLabel = CUSTOM_COLLECTIONS[state.collection].label;
 Object.keys(state.filters).forEach(key => {
   state.filters[key] = ["minPrice", "maxPrice"].includes(key)
     ? (initialUrlParams.get(key) || "")
@@ -868,6 +882,7 @@ function applyStatusCollection(status, label) {
   state.category = "";
   state.subCategory = "";
   state.search = "";
+  state.collection = "";
   state.collectionLabel = label;
   state.page = 1;
   els.searchInput.value = "";
@@ -886,6 +901,7 @@ function applyCategory(category, subCategory = "", options = {}) {
   state.category = category;
   state.subCategory = subCategory;
   state.search = options.search || "";
+  state.collection = "";
   state.collectionLabel = options.label || "";
   state.page = 1;
   els.searchInput.value = state.search;
@@ -1134,6 +1150,7 @@ function clearAdvancedFilters() {
 
 function applyFacetChange() {
   state.status = "";
+  state.collection = "";
   state.collectionLabel = "";
   state.page = 1;
   updateFilterCounter();
@@ -1156,6 +1173,42 @@ function activeFilterSummary() {
   return parts.join(" · ");
 }
 
+async function fetchCustomCollection(collectionKey) {
+  const definition = CUSTOM_COLLECTIONS[collectionKey];
+  if (!definition) throw new Error("Nepoznata kolekcija.");
+
+  const payloads = await Promise.all(definition.terms.map(async term => {
+    const params = new URLSearchParams({ search: term, page: "1", limit: "20" });
+    const response = await fetch(`${API_BASE}/products-grouped?${params}`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || "Kolekcija trenutno nije dostupna.");
+    return Array.isArray(data.products) ? data.products : [];
+  }));
+
+  const products = [];
+  const seen = new Set();
+  payloads.flat().forEach(product => {
+    const key = product.modelCode || product.representativeVariantId || product.representativeCode;
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    products.push(product);
+  });
+
+  return {
+    success: true,
+    page: 1,
+    totalPages: 1,
+    totalGroupedCards: products.length,
+    totalMatchingProducts: products.length,
+    hasPreviousPage: false,
+    hasNextPage: false,
+    products,
+  };
+}
+
 async function loadProducts() {
   const requestId = ++state.requestId;
   els.message.classList.remove("hidden");
@@ -1169,16 +1222,21 @@ async function loadProducts() {
   if (!state.status) appendAdvancedFilters(params);
 
   try {
-    const endpoint = state.status
-      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=49`
-      : `${API_BASE}/products-grouped?${params}`;
-    const response = await fetch(endpoint, {
-      headers: { Accept: "application/json" },
-      cache: state.status ? "no-store" : "default",
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    if (!data.success) throw new Error(data.error || "Katalog trenutno nije dostupan.");
+    let data;
+    if (state.collection) {
+      data = await fetchCustomCollection(state.collection);
+    } else {
+      const endpoint = state.status
+        ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=49`
+        : `${API_BASE}/products-grouped?${params}`;
+      const response = await fetch(endpoint, {
+        headers: { Accept: "application/json" },
+        cache: state.status ? "no-store" : "default",
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      data = await response.json();
+      if (!data.success) throw new Error(data.error || "Katalog trenutno nije dostupan.");
+    }
     if (requestId !== state.requestId) return;
 
     state.page = data.page || 1;
@@ -1190,16 +1248,16 @@ async function loadProducts() {
     if (!state.status) els.heroTotal.textContent = total.toLocaleString("sr-RS");
     els.totalMatches.textContent = matches.toLocaleString("sr-RS");
     const filterName = activeFilterSummary();
-    els.resultsLabel.textContent = state.status ? "proizvoda u kolekciji" : (state.search ? `rezultata za „${state.search}”` : "proizvoda");
-    els.activeFilter.classList.toggle("hidden", !(state.category || state.status || selectedFilterCount()));
+    els.resultsLabel.textContent = (state.status || state.collection) ? "proizvoda u kolekciji" : (state.search ? `rezultata za „${state.search}”` : "proizvoda");
+    els.activeFilter.classList.toggle("hidden", !(state.category || state.status || state.collection || selectedFilterCount()));
     els.activeFilterName.textContent = filterName || "";
-    els.pageInfo.textContent = state.status
+    els.pageInfo.textContent = (state.status || state.collection)
       ? `${state.collectionLabel} · Strana ${state.page} od ${state.totalPages}`
       : `Strana ${state.page} od ${state.totalPages}`;
     els.paginationText.textContent = `${state.page} / ${state.totalPages}`;
     els.prev.disabled = !data.hasPreviousPage;
     els.next.disabled = !data.hasNextPage;
-    els.clearSearch.classList.toggle("hidden", !state.search);
+    els.clearSearch.classList.toggle("hidden", !(state.search || state.collection));
     els.pagination?.classList.toggle("hidden", state.totalPages <= 1);
 
     const products = Array.isArray(data.products) ? data.products : [];
@@ -1226,6 +1284,7 @@ els.searchForm?.addEventListener("submit", event => {
   hideSearchSuggestions();
   state.status = "";
   state.search = els.searchInput.value.trim();
+  state.collection = "";
   state.collectionLabel = "";
   state.page = 1;
   loadProducts();
@@ -1258,6 +1317,7 @@ els.clearSearch?.addEventListener("click", () => {
   hideSearchSuggestions();
   state.status = "";
   state.search = "";
+  state.collection = "";
   state.collectionLabel = "";
   state.page = 1;
   els.searchInput.value = "";
@@ -1360,6 +1420,7 @@ els.clearAllFilters?.addEventListener("click", () => {
   state.status = "";
   state.category = "";
   state.subCategory = "";
+  state.collection = "";
   state.collectionLabel = "";
   state.page = 1;
   updateFilterCounter();
