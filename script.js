@@ -24,6 +24,7 @@ const els = {
   searchForm: document.getElementById("searchForm"),
   searchInput: document.getElementById("searchInput"),
   searchSuggestions: document.getElementById("searchSuggestions"),
+  catalogStart: document.getElementById("catalogStart"),
   clearSearch: document.getElementById("clearSearch"),
   categoriesToggle: document.getElementById("categoriesToggle"),
   categoriesMenu: document.getElementById("categoriesMenu"),
@@ -288,6 +289,13 @@ function formatPriceRange(minValue, maxValue) {
   return `${formatPrice(min)} – ${formatPrice(max)}`;
 }
 
+function formatPriceRangeWithVat(minValue, maxValue) {
+  const min = Number(minValue);
+  const max = Number(maxValue);
+  if (!Number.isFinite(min) || min <= 0) return "";
+  return `${formatPriceRange(min * 1.2, Number.isFinite(max) && max > 0 ? max * 1.2 : min * 1.2)} sa PDV-om`;
+}
+
 function productBadgeState(detail) {
   const statuses = Array.isArray(detail?.statuses) ? detail.statuses : [];
   const printMethods = Array.isArray(detail?.printMethods) ? detail.printMethods : [];
@@ -438,7 +446,7 @@ function cardTemplate(product, index) {
         </div>
         <div class="card-arrival hidden"><span class="arrival-truck" aria-hidden="true"></span><span><strong></strong><small></small></span></div>
         <div class="card-meta">
-          <div><span class="card-price">${escapeHtml(groupPrice)}</span><small>po komadu</small></div>
+          <div><span class="card-price">${escapeHtml(groupPrice)}</span><small>po komadu bez PDV-a</small><small class="card-price-vat">${escapeHtml(formatPriceRangeWithVat(product.priceMin, product.priceMax))}</small></div>
           <a class="card-arrow" href="${href}" aria-label="Detalji proizvoda">→</a>
         </div>
         <div class="variant-summary">
@@ -487,6 +495,7 @@ function applyCardDetail(card, detail, availability = null) {
   const hoverImage = card.querySelector(".card-image-hover");
   const media = card.querySelector(".card-media");
   const price = card.querySelector(".card-price");
+  const priceWithVat = card.querySelector(".card-price-vat");
   const stockElement = card.querySelector(".card-stock");
   const arrivalElement = card.querySelector(".card-arrival");
   image?.addEventListener("load", () => {
@@ -533,9 +542,10 @@ function applyCardDetail(card, detail, availability = null) {
   }
   const groupPriceMin = Number(card.dataset.groupPriceMin);
   const groupPriceMax = Number(card.dataset.groupPriceMax);
-  price.textContent = Number.isFinite(groupPriceMin) && groupPriceMin > 0
-    ? formatPriceRange(groupPriceMin, groupPriceMax)
-    : formatPriceRange(availability?.priceMin ?? detail?.price, availability?.priceMax ?? detail?.price);
+  const resolvedPriceMin = Number.isFinite(groupPriceMin) && groupPriceMin > 0 ? groupPriceMin : (availability?.priceMin ?? detail?.price);
+  const resolvedPriceMax = Number.isFinite(groupPriceMin) && groupPriceMin > 0 ? groupPriceMax : (availability?.priceMax ?? detail?.price);
+  price.textContent = formatPriceRange(resolvedPriceMin, resolvedPriceMax);
+  if (priceWithVat) priceWithVat.textContent = formatPriceRangeWithVat(resolvedPriceMin, resolvedPriceMax);
   if (stockElement) {
     const groupStockKnown = card.dataset.groupStockKnown === "true";
     const stockValue = groupStockKnown
@@ -681,7 +691,7 @@ function startHeroRotation() {
   stopHeroRotation();
   const slideCount = els.heroShowcase?.querySelectorAll("[data-hero-slide]").length || 0;
   if (slideCount < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  heroRotationTimer = window.setInterval(() => activateHeroSlide(heroSlideIndex + 1, false), 6500);
+  heroRotationTimer = window.setInterval(() => activateHeroSlide(heroSlideIndex + 1, false), 5800);
 }
 
 function initializePromoBanner() {
@@ -713,6 +723,14 @@ function initializePromoBanner() {
   els.heroShowcase.addEventListener("pointerleave", startHeroRotation);
   els.heroShowcase.addEventListener("focusin", stopHeroRotation);
   els.heroShowcase.addEventListener("focusout", startHeroRotation);
+  let heroTouchX = null;
+  els.heroShowcase.addEventListener("touchstart", event => { heroTouchX = event.touches[0]?.clientX ?? null; }, { passive: true });
+  els.heroShowcase.addEventListener("touchend", event => {
+    if (heroTouchX === null) return;
+    const distance = (event.changedTouches[0]?.clientX ?? heroTouchX) - heroTouchX;
+    heroTouchX = null;
+    if (Math.abs(distance) > 45) activateHeroSlide(heroSlideIndex + (distance < 0 ? 1 : -1));
+  }, { passive: true });
 
   activateHeroSlide(0, false);
   startHeroRotation();
@@ -824,6 +842,15 @@ function createCircularCarousel({ track, dots, previous, next, itemSelector, aut
   track.closest("section")?.addEventListener("pointerleave", start);
   track.closest("section")?.addEventListener("focusin", stop);
   track.closest("section")?.addEventListener("focusout", start);
+  let touchX = null;
+  track.addEventListener("touchstart", event => { touchX = event.touches[0]?.clientX ?? null; stop(); }, { passive: true });
+  track.addEventListener("touchend", event => {
+    if (touchX === null) return start();
+    const distance = (event.changedTouches[0]?.clientX ?? touchX) - touchX;
+    touchX = null;
+    if (Math.abs(distance) > 45) move(distance < 0 ? 1 : -1);
+    else start();
+  }, { passive: true });
   start();
 
   return { move, start, stop, refresh: () => { track.style.transition = "none"; track.style.transform = "translate3d(0,0,0)"; } };
@@ -856,7 +883,7 @@ async function loadNewProducts() {
       previous: els.newProductsPrev,
       next: els.newProductsNext,
       itemSelector: ".product-card",
-      autoMs: 5600,
+      autoMs: 4800,
       label: "novitet",
     });
   } catch (error) {
@@ -889,8 +916,8 @@ function applyStatusCollection(status, label) {
   closeCategoriesMenu();
   closeNewMenu();
   loadProducts();
-  const catalogTop = els.searchForm
-    ? els.searchForm.getBoundingClientRect().top + window.scrollY - 145
+  const catalogTop = els.catalogStart
+    ? els.catalogStart.getBoundingClientRect().top + window.scrollY - 145
     : 300;
   window.scrollTo({ top: Math.max(0, catalogTop), behavior: "smooth" });
 }
@@ -907,8 +934,8 @@ function applyCategory(category, subCategory = "", options = {}) {
   els.searchInput.value = state.search;
   closeCategoriesMenu();
   loadProducts();
-  const catalogTop = els.searchForm
-    ? els.searchForm.getBoundingClientRect().top + window.scrollY - 145
+  const catalogTop = els.catalogStart
+    ? els.catalogStart.getBoundingClientRect().top + window.scrollY - 145
     : 300;
   window.scrollTo({ top: Math.max(0, catalogTop), behavior: "smooth" });
 }
@@ -1475,7 +1502,7 @@ promoStoriesCarousel = createCircularCarousel({
   previous: els.promoStoriesPrev,
   next: els.promoStoriesNext,
   itemSelector: ".promo-story",
-  autoMs: 6200,
+  autoMs: 5400,
   label: "promotivni baner",
 });
 loadCategories();

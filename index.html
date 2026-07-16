@@ -7,15 +7,22 @@
   <title>DemoShop — Katalog promotivnih proizvoda</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
   <link rel="icon" type="image/png" href="assets/brand/favicon.png">
-  <link rel="stylesheet" href="style.css?v=55">
+  <link rel="stylesheet" href="style.css?v=56">
   <link rel="stylesheet" href="catalog-taxonomy.css?v=13">
 </head>
-<body data-demoshop-build="55">
+<body data-demoshop-build="56">
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="index.html" aria-label="DemoShop početna">
         <img class="brand-logo" src="assets/brand/demoshop-logo.png" alt="DemoShop">
       </a>
+      <form id="searchForm" class="header-search" role="search">
+        <label class="visually-hidden" for="searchInput">Pretraga kataloga</label>
+        <input id="searchInput" type="search" placeholder="Pretraga po nazivu ili šifri" autocomplete="off">
+        <button type="submit" aria-label="Pretraži katalog">⌕</button>
+        <button id="clearSearch" class="header-search-clear hidden" type="button" aria-label="Poništi pretragu">×</button>
+        <div id="searchSuggestions" class="search-suggestions hidden" role="listbox" aria-label="Predlozi proizvoda"></div>
+      </form>
       <div class="header-note"><span class="status-dot"></span><span id="apiStatus">Povezivanje sa katalogom</span></div>
       <a class="cart-link" href="cart.html">Upit <span class="cart-count" data-cart-count>0</span></a>
     </div>
@@ -37,7 +44,7 @@
       <button class="quick-category" type="button" data-category="TE">Tehnologija</button>
       <button class="quick-category" type="button" data-category="TP">Torbe i putovanje</button>
       <button class="quick-category" type="button" data-category="OL">Olovke</button>
-      <a class="portfolio-nav-link" href="radovi.html">Naši radovi</a>
+      <a class="portfolio-nav-link portfolio-nav-cta" href="radovi.html">Naši proizvodi</a>
     </div>
     <div id="categoriesMenu" class="categories-menu hidden">
       <div class="container"><div id="categoriesGrid" class="categories-grid"></div></div>
@@ -64,7 +71,6 @@
           </div>
 
           <div class="promo-banner-controls">
-            <button type="button" data-hero-prev aria-label="Prethodni baner">←</button>
             <div class="promo-banner-dots" aria-label="Izbor banera">
               <button type="button" class="active" data-hero-dot="0" aria-label="Baner 1" aria-current="true"></button>
               <button type="button" data-hero-dot="1" aria-label="Baner 2" aria-current="false"></button>
@@ -79,7 +85,6 @@
               <button type="button" data-hero-dot="10" aria-label="Baner 11" aria-current="false"></button>
               <button type="button" data-hero-dot="11" aria-label="Baner 12" aria-current="false"></button>
             </div>
-            <button type="button" data-hero-next aria-label="Sledeći baner">→</button>
           </div>
         </div>
         <span id="heroTotal" class="visually-hidden">1.756</span>
@@ -92,10 +97,6 @@
           <div>
             <p class="eyebrow">SVEŽE IZ KATALOGA</p>
             <h2 id="newProductsTitle">Noviteti</h2>
-          </div>
-          <div class="new-products-controls" aria-label="Pomeranje noviteta">
-            <button id="newProductsPrev" type="button" aria-label="Prethodni noviteti">←</button>
-            <button id="newProductsNext" type="button" aria-label="Sledeći noviteti">→</button>
           </div>
         </div>
         <p id="newProductsMessage" class="new-products-message">Učitavanje najnovijih proizvoda…</p>
@@ -112,10 +113,6 @@
           <div>
             <p class="eyebrow">IDEJE ZA VAŠ BREND</p>
             <h2 id="promoStoriesTitle">Izdvajamo iz kataloga</h2>
-          </div>
-          <div class="promo-stories-arrows" aria-label="Pomeranje promotivnih banera">
-            <button id="promoStoriesPrev" type="button" aria-label="Prethodni promotivni baner">←</button>
-            <button id="promoStoriesNext" type="button" aria-label="Sledeći promotivni baner">→</button>
           </div>
         </div>
         <div class="promo-stories-viewport">
@@ -201,17 +198,7 @@
       </div>
     </section>
 
-    <section class="container catalog-shell">
-      <form id="searchForm" class="search-panel" role="search">
-        <label for="searchInput">Pretraga kataloga</label>
-        <div class="search-row">
-          <input id="searchInput" type="search" placeholder="Naziv ili šifra, npr. RIVER ili 57.031" autocomplete="off">
-          <button type="submit">Pretraži</button>
-          <button id="clearSearch" class="button-ghost hidden" type="button">Poništi</button>
-        </div>
-        <div id="searchSuggestions" class="search-suggestions hidden" role="listbox" aria-label="Predlozi proizvoda"></div>
-      </form>
-
+    <section id="catalogStart" class="container catalog-shell">
       <button id="mobileFiltersToggle" class="mobile-filters-toggle" type="button" aria-expanded="false" aria-controls="catalogFilters">
         Filteri <span id="mobileFilterCount">0</span>
       </button>
@@ -266,8 +253,8 @@
     </div>
     <div class="container footer-bottom"><span>© 2026 Demo Group. Sva prava zadržana.</span><span>Cene su informativne, bez PDV-a i potvrđuju se kroz upit.</span></div>
   </footer>
-  <script src="cart-store.js?v=7"></script>
+  <script src="cart-store.js?v=56"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=54"></script>
+  <script src="script.js?v=56"></script>
 </body>
 </html>

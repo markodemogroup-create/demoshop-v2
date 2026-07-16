@@ -7,14 +7,20 @@
   <title>Proizvod — DemoShop</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
   <link rel="icon" type="image/png" href="assets/brand/favicon.png">
-  <link rel="stylesheet" href="style.css?v=55">
+  <link rel="stylesheet" href="style.css?v=56">
   <link rel="stylesheet" href="product-availability.css?v=17">
 </head>
-<body data-demoshop-build="55">
+<body data-demoshop-build="56">
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="index.html" aria-label="DemoShop početna"><img class="brand-logo" src="assets/brand/demoshop-logo.png" alt="DemoShop"></a>
-      <div class="header-actions"><a class="back-link" href="radovi.html">Naši radovi</a><a class="back-link" href="index.html">← Nazad na katalog</a><a class="cart-link" href="cart.html">Upit <span class="cart-count" data-cart-count>0</span></a></div>
+      <form class="header-search" role="search" action="index.html" data-header-search>
+        <label class="visually-hidden" for="headerSearchInput">Pretraga kataloga</label>
+        <input id="headerSearchInput" name="search" type="search" placeholder="Pretraga po nazivu ili šifri" autocomplete="off" data-header-search-input>
+        <button type="submit" aria-label="Pretraži katalog">⌕</button>
+        <div class="search-suggestions hidden" role="listbox" aria-label="Predlozi proizvoda" data-header-search-suggestions></div>
+      </form>
+      <div class="header-actions"><a class="back-link" href="index.html">← Katalog</a><a class="cart-link" href="cart.html">Upit <span class="cart-count" data-cart-count>0</span></a></div>
     </div>
   </header>
 
@@ -36,7 +42,7 @@
         <h1 id="productName"></h1>
         <p class="model-line">Model <strong id="modelCode"></strong></p>
 
-        <div class="price-row"><span id="price">—</span><small>Cena po komadu · bez PDV-a</small></div>
+        <div class="price-row"><span id="price">—</span><small>Cena po komadu · bez PDV-a</small><strong id="priceWithVat" class="price-with-vat">—</strong></div>
 
         <div class="option-block">
           <div class="option-heading"><strong>Boja / nijansa</strong><span id="selectedShadeLabel"></span></div>
@@ -60,7 +66,11 @@
         </div>
 
         <div class="add-to-cart-row">
-          <label for="quantity">Količina<input id="quantity" type="number" min="1" value="1" inputmode="numeric"></label>
+          <div class="quantity-picker" aria-label="Količina proizvoda">
+            <span>Količina</span>
+            <div><button id="quantityMinus" type="button" aria-label="Smanji količinu">−</button><output id="quantity" aria-live="polite">1</output><button id="quantityPlus" type="button" aria-label="Povećaj količinu">+</button></div>
+            <small id="packageHint">Minimalna količina i korak: 1 kom.</small>
+          </div>
           <button id="quoteButton" class="quote-button" type="button">Dodaj u upit</button>
         </div>
         <p id="cartFeedback" class="helper">Izaberite boju i veličinu, zatim dodajte tačnu varijantu u upit.</p>
@@ -118,7 +128,8 @@
     </div>
     <div class="container footer-bottom"><span>© 2026 Demo Group. Sva prava zadržana.</span><span>Cene su informativne, bez PDV-a i potvrđuju se kroz upit.</span></div>
   </footer>
-  <script src="cart-store.js?v=7"></script>
-  <script src="product.js?v=49"></script>
+  <script src="cart-store.js?v=56"></script>
+  <script src="header-search.js?v=56"></script>
+  <script src="product.js?v=56"></script>
 </body>
 </html>

@@ -6,13 +6,19 @@
   <meta name="description" content="Izbor realizovanih projekata štampe, poslovnog materijala, letaka, časopisa i kalendara.">
   <title>Naši radovi — DemoShop</title>
   <link rel="icon" type="image/png" href="assets/brand/favicon.png">
-  <link rel="stylesheet" href="style.css?v=55">
+  <link rel="stylesheet" href="style.css?v=56">
   <link rel="stylesheet" href="radovi.css?v=2">
 </head>
-<body data-demoshop-build="55">
+<body data-demoshop-build="56">
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="index.html" aria-label="DemoShop početna"><img class="brand-logo" src="assets/brand/demoshop-logo.png" alt="DemoShop"></a>
+      <form class="header-search" role="search" action="index.html" data-header-search>
+        <label class="visually-hidden" for="headerSearchInput">Pretraga kataloga</label>
+        <input id="headerSearchInput" name="search" type="search" placeholder="Pretraga po nazivu ili šifri" autocomplete="off" data-header-search-input>
+        <button type="submit" aria-label="Pretraži katalog">⌕</button>
+        <div class="search-suggestions hidden" role="listbox" aria-label="Predlozi proizvoda" data-header-search-suggestions></div>
+      </form>
       <div class="header-actions"><a class="back-link" href="index.html">← Katalog proizvoda</a><a class="cart-link" href="cart.html">Upit <span class="cart-count" data-cart-count>0</span></a></div>
     </div>
   </header>
@@ -108,7 +114,8 @@
     </div>
     <div class="container footer-bottom"><span>© 2026 Demo Group. Sva prava zadržana.</span><span>Cene su informativne, bez PDV-a i potvrđuju se kroz upit.</span></div>
   </footer>
-  <script src="cart-store.js?v=8"></script>
+  <script src="cart-store.js?v=56"></script>
+  <script src="header-search.js?v=56"></script>
   <script src="radovi.js?v=2"></script>
 </body>
 </html>

@@ -16,6 +16,7 @@ const elements = {
   name: document.getElementById("productName"),
   model: document.getElementById("modelCode"),
   price: document.getElementById("price"),
+  priceWithVat: document.getElementById("priceWithVat"),
   colorOptions: document.getElementById("colorOptions"),
   selectedShadeLabel: document.getElementById("selectedShadeLabel"),
   sizeBlock: document.getElementById("sizeBlock"),
@@ -29,6 +30,9 @@ const elements = {
   arrival: document.getElementById("arrival"),
   quoteButton: document.getElementById("quoteButton"),
   quantity: document.getElementById("quantity"),
+  quantityMinus: document.getElementById("quantityMinus"),
+  quantityPlus: document.getElementById("quantityPlus"),
+  packageHint: document.getElementById("packageHint"),
   cartFeedback: document.getElementById("cartFeedback"),
   productExtra: document.getElementById("productExtra"),
   productDescription: document.getElementById("productDescription"),
@@ -60,6 +64,10 @@ let activeGalleryImage = null;
 let dimensionImageUrl = null;
 let galleryMode = "images";
 const detailCache = new Map();
+const VAT_RATE = 0.2;
+let activePackageStep = 1;
+let activePackageMaximum = null;
+let activeQuantity = 1;
 
 async function getVariantDetail(id) {
   if (!id) return null;
@@ -93,6 +101,46 @@ function formatPrice(value) {
   return Number.isFinite(price) && price > 0
     ? `${price.toLocaleString("sr-RS", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
     : "Cena na upit";
+}
+
+function formatPriceWithVat(value) {
+  const price = Number(value);
+  return Number.isFinite(price) && price > 0
+    ? `${formatPrice(price * (1 + VAT_RATE))} sa PDV-om`
+    : "";
+}
+
+function packageStepFor(detail) {
+  const direct = Number(detail?.packaging?.commercialPackage);
+  if (Number.isFinite(direct) && direct > 0) return Math.max(1, Math.floor(direct));
+  for (const value of [detail?.packaging?.packageInfo, detail?.packaging?.package]) {
+    const numbers = String(value || "").match(/\d+(?:[.,]\d+)?/g) || [];
+    const candidate = Number(String(numbers.at(-1) || "").replace(",", "."));
+    if (Number.isFinite(candidate) && candidate > 0) return Math.max(1, Math.floor(candidate));
+  }
+  return 1;
+}
+
+function syncQuantity(nextValue = activeQuantity) {
+  const stepped = Math.max(activePackageStep, Math.round(Number(nextValue || activePackageStep) / activePackageStep) * activePackageStep);
+  activeQuantity = activePackageMaximum ? Math.min(stepped, activePackageMaximum) : stepped;
+  if (elements.quantity) elements.quantity.textContent = activeQuantity.toLocaleString("sr-RS");
+  if (elements.quantityMinus) elements.quantityMinus.disabled = activeQuantity <= activePackageStep;
+  if (elements.quantityPlus) elements.quantityPlus.disabled = Boolean(activePackageMaximum && activeQuantity >= activePackageMaximum);
+}
+
+function configurePackaging(detail) {
+  activePackageStep = packageStepFor(detail);
+  const stock = Number(detail?.stock);
+  activePackageMaximum = Number.isFinite(stock) && stock > 0 ? Math.floor(stock / activePackageStep) * activePackageStep : null;
+  if (activePackageMaximum !== null && activePackageMaximum < activePackageStep) activePackageMaximum = null;
+  activeQuantity = activePackageStep;
+  if (elements.packageHint) {
+    elements.packageHint.textContent = activePackageStep > 1
+      ? `Minimalna količina i korak: ${activePackageStep.toLocaleString("sr-RS")} kom.`
+      : "Količina se bira po komadu.";
+  }
+  syncQuantity(activeQuantity);
 }
 
 function productBadgesHtml(detail) {
@@ -532,16 +580,19 @@ async function loadVariantDetail(variant) {
     if (elements.productBadges) elements.productBadges.innerHTML = productBadgesHtml(detail);
     elements.variantCode.textContent = detail.code || variant.code || "—";
     elements.price.textContent = formatPrice(detail.price);
+    if (elements.priceWithVat) elements.priceWithVat.textContent = formatPriceWithVat(detail.price);
     elements.stock.textContent = formatStock(detail.stock);
     const arrival = arrivalSummary(detail);
     elements.arrivalBlock.classList.toggle("hidden", !arrival);
     elements.arrival.textContent = arrival || "—";
     renderGallery(detail);
     renderProductInformation(detail);
+    configurePackaging(detail);
     hideMessage();
   } catch (error) {
     if (requestNumber !== variantRequestNumber) return;
     elements.price.textContent = "Cena nije dostupna";
+    if (elements.priceWithVat) elements.priceWithVat.textContent = "";
     elements.stock.textContent = "Lager nije dostupan";
     elements.arrivalBlock.classList.add("hidden");
     const fallbackImage = fallbackImageForId(variant.id);
@@ -688,7 +739,7 @@ async function loadRelatedProducts() {
           <img class="related-product-hover" alt="" loading="lazy">
           <span class="product-status-badges" aria-label="Oznake proizvoda"></span>
         </a>
-        <div><small>Model ${escapeHtml(model)}</small><h3><a href="${href}">${escapeHtml(display.title)}</a></h3>${display.description ? `<p>${escapeHtml(display.description)}</p>` : ""}<strong class="related-product-price">Učitavanje…</strong></div>
+        <div><small>Model ${escapeHtml(model)}</small><h3><a href="${href}">${escapeHtml(display.title)}</a></h3>${display.description ? `<p>${escapeHtml(display.description)}</p>` : ""}<strong class="related-product-price">Učitavanje…</strong><small class="related-product-price-vat"></small></div>
       </article>`;
     }).join("");
 
@@ -698,6 +749,8 @@ async function loadRelatedProducts() {
     cards.forEach((card, index) => {
       const detail = details[index];
       card.querySelector(".related-product-price").textContent = formatPrice(detail?.price);
+      const vatPrice = card.querySelector(".related-product-price-vat");
+      if (vatPrice) vatPrice.textContent = formatPriceWithVat(detail?.price);
       const badges = card.querySelector(".product-status-badges");
       if (badges) badges.innerHTML = productBadgesHtml(detail);
       const primary = card.querySelector(".related-product-primary");
@@ -770,12 +823,15 @@ async function loadProduct() {
   }
 }
 
+elements.quantityMinus?.addEventListener("click", () => syncQuantity(activeQuantity - activePackageStep));
+elements.quantityPlus?.addEventListener("click", () => syncQuantity(activeQuantity + activePackageStep));
+
 elements.quoteButton.addEventListener("click", () => {
   if (!selectedVariant || !loadedVariantDetail) {
     elements.cartFeedback.textContent = "Sačekajte da se izabrana varijanta učita.";
     return;
   }
-  const quantity = Math.max(1, Number.parseInt(elements.quantity.value || "1", 10));
+  const quantity = activeQuantity;
   window.DemoCart.add({
     id: String(selectedVariant.id),
     modelCode: product?.modelCode || requestedModel || "",
@@ -788,6 +844,8 @@ elements.quoteButton.addEventListener("click", () => {
       : null,
     image: loadedVariantDetail.image || fallbackImageForId(selectedVariant.id),
     quantity,
+    packStep: activePackageStep,
+    maxStock: Number(loadedVariantDetail.stock) || null,
   });
   elements.cartFeedback.innerHTML = `Dodato u upit: <strong>${quantity} kom.</strong> <a href="cart.html">Otvori upit →</a>`;
 });
