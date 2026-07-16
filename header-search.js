@@ -107,7 +107,7 @@
         ? products.map((product, index) => {
             const model = String(product.modelCode || "");
             const title = String(product.name || model || "Proizvod").split(",")[0];
-            return `<a class="search-suggestion" role="option" href="product.html?model=${encodeURIComponent(model)}&v=58">
+            return `<a class="search-suggestion" role="option" href="product.html?model=${encodeURIComponent(model)}&v=59">
               <span class="search-suggestion-copy"><strong>${escapeHtml(title)}</strong><small>Model ${escapeHtml(model)}</small></span>
               <img class="search-suggestion-image" data-header-suggestion-image="${index}" alt="">
             </a>`;

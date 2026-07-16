@@ -257,7 +257,7 @@ body{background:#fbfdfc}
 .promo-story-rose{color:#18312e}.promo-story-rose:before{background:radial-gradient(circle at 78% 25%,rgba(255,255,255,.5),transparent 45%),linear-gradient(135deg,#d9f1eb,#f5fbf9)}
 .promo-story-rose>span{color:#168f80}.promo-story-rose>small{color:#4f706a}
 .site-footer{background:var(--ink);border-top:0;color:#c7d4d0}
-.site-footer .container:before{content:"";display:inline-block;width:25px;height:25px;margin-right:10px;vertical-align:middle;background:url("assets/brand/demoshop-icon.png") center/contain no-repeat}
+.site-footer .container:before{content:"";display:inline-block;width:25px;height:25px;margin-right:10px;vertical-align:middle;background:url("assets/brand/demoshop-icon-transparent-v59.png") center/contain no-repeat}
 .document-item:not(.document-item-static):hover{border-color:var(--brand-teal)}
 @media(max-width:700px){
   .brand{width:126px;height:54px}.brand-logo{width:126px;height:43px}
