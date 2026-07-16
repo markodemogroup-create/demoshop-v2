@@ -31,6 +31,7 @@ const els = {
   newProductsMessage: document.getElementById("newProductsMessage"),
   newProductsPrev: document.getElementById("newProductsPrev"),
   newProductsNext: document.getElementById("newProductsNext"),
+  newProductsDots: document.getElementById("newProductsDots"),
   catalogFilters: document.getElementById("catalogFilters"),
   dynamicFilters: document.getElementById("dynamicFilters"),
   categoryFilterTree: document.getElementById("categoryFilterTree"),
@@ -638,7 +639,10 @@ function activateHeroSlide(index, restartRotation = true) {
     const active = slideIndex === heroSlideIndex;
     slide.classList.toggle("active", active);
     slide.setAttribute("aria-hidden", String(!active));
-    slide.tabIndex = active ? 0 : -1;
+    slide.tabIndex = active && slide.matches("a, button") ? 0 : -1;
+    slide.querySelectorAll("a, button").forEach(control => {
+      control.tabIndex = active ? 0 : -1;
+    });
   });
   els.heroShowcase.querySelectorAll("[data-hero-dot]").forEach((dot, dotIndex) => {
     dot.classList.toggle("active", dotIndex === heroSlideIndex);
@@ -660,81 +664,15 @@ function startHeroRotation() {
   heroRotationTimer = window.setInterval(() => activateHeroSlide(heroSlideIndex + 1, false), 6500);
 }
 
-async function renderHeroShowcase(products) {
+function initializePromoBanner() {
   if (!els.heroShowcase) return;
   stopHeroRotation();
 
-  if (!products.length) {
-    els.heroShowcase.innerHTML = `
-      <div class="hero-showcase-fallback">
-        <span>DEMO GROUP</span>
-        <strong>Vaš brend na pravom proizvodu.</strong>
-        <p>Pregledajte aktuelni katalog i pošaljite upit bez obaveze.</p>
-      </div>`;
-    return;
-  }
-
-  const enriched = await Promise.all(products.slice(0, 8).map(async product => ({
-    product,
-    detail: await fetchVariantDetail(product.representativeVariantId),
-  })));
-  const slides = enriched
-    .filter(item => item.detail?.image || modelAssetIds(item.product.modelCode, item.product.representativeCode).length)
-    .sort((a, b) => Number(b.detail?.stock > 0) - Number(a.detail?.stock > 0))
-    .slice(0, 5);
-
-  if (!slides.length) return renderHeroShowcase([]);
-
-  els.heroShowcase.innerHTML = `
-    <div class="hero-product-slides">
-      ${slides.map(({ product, detail }, index) => {
-        const model = product.modelCode || "";
-        const display = productDisplayName(product.name);
-        const imageIds = modelAssetIds(model, product.representativeCode);
-        const modelImage = imageIds[0]
-          ? `https://apiv2.promosolution.services/content/ModelItem/${imageIds[0]}_000.webp`
-          : "";
-        const primaryImage = modelImage || detail?.image || "";
-        const stockState = cardStockState(detail?.stock);
-        const href = `product.html?model=${encodeURIComponent(model)}&v=39`;
-
-        return `<a class="hero-product-slide ${index === 0 ? "active" : ""}" data-hero-slide="${index}"
-          href="${href}" aria-hidden="${index === 0 ? "false" : "true"}" tabindex="${index === 0 ? "0" : "-1"}">
-          <span class="hero-product-kicker">NOVO U KATALOGU</span>
-          <div class="hero-product-image">
-            <img src="${escapeHtml(primaryImage)}" data-fallback="${escapeHtml(detail?.image || "")}" alt="${escapeHtml(display.title)}">
-          </div>
-          <div class="hero-product-copy">
-            <small>Model ${escapeHtml(model)}</small>
-            <strong>${escapeHtml(display.title)}</strong>
-            ${display.description ? `<p>${escapeHtml(display.description)}</p>` : ""}
-            <div class="hero-product-meta">
-              <b>${formatPrice(detail?.price)}</b>
-              <span class="hero-product-stock hero-product-stock-${stockState.className}">${escapeHtml(stockState.label)} · ${escapeHtml(stockState.amount)}</span>
-            </div>
-            <em>Pogledaj proizvod <b aria-hidden="true">→</b></em>
-          </div>
-        </a>`;
-      }).join("")}
-    </div>
-    <div class="hero-showcase-controls">
-      <button type="button" data-hero-prev aria-label="Prethodni proizvod">←</button>
-      <div class="hero-showcase-dots">
-        ${slides.map((_, index) => `<button type="button" class="${index === 0 ? "active" : ""}" data-hero-dot="${index}" aria-label="Prikaži proizvod ${index + 1}" aria-current="${index === 0 ? "true" : "false"}"></button>`).join("")}
-      </div>
-      <button type="button" data-hero-next aria-label="Sledeći proizvod">→</button>
-    </div>`;
-
-  els.heroShowcase.querySelectorAll(".hero-product-image img").forEach(image => {
-    image.onerror = () => {
-      const fallback = image.dataset.fallback || "";
-      if (fallback && image.src !== fallback) {
-        image.src = fallback;
-      } else {
-        image.closest(".hero-product-image")?.classList.add("no-image");
-        image.remove();
-      }
-    };
+  els.heroShowcase.querySelectorAll(".promo-product img").forEach(image => {
+    image.addEventListener("error", () => {
+      image.closest(".promo-product")?.classList.add("image-unavailable");
+      image.remove();
+    }, { once: true });
   });
 
   els.heroShowcase.querySelector("[data-hero-prev]")?.addEventListener("click", event => {
@@ -760,6 +698,40 @@ async function renderHeroShowcase(products) {
   startHeroRotation();
 }
 
+function newProductsStep() {
+  const card = els.newProductsGrid?.querySelector(".product-card");
+  if (!card || !els.newProductsGrid) return 320;
+  const styles = window.getComputedStyle(els.newProductsGrid);
+  return card.getBoundingClientRect().width + (Number.parseFloat(styles.columnGap || styles.gap) || 16);
+}
+
+function syncNewProductsDots() {
+  if (!els.newProductsGrid || !els.newProductsDots) return;
+  const step = newProductsStep();
+  const activeIndex = Math.max(0, Math.round(els.newProductsGrid.scrollLeft / step));
+  els.newProductsDots.querySelectorAll("button").forEach((dot, index) => {
+    const active = index === Math.min(activeIndex, els.newProductsDots.children.length - 1);
+    dot.classList.toggle("active", active);
+    dot.setAttribute("aria-current", active ? "true" : "false");
+  });
+}
+
+function renderNewProductsDots() {
+  if (!els.newProductsGrid || !els.newProductsDots) return;
+  const cards = els.newProductsGrid.querySelectorAll(".product-card");
+  const step = newProductsStep();
+  const visible = Math.max(1, Math.floor((els.newProductsGrid.clientWidth + 2) / step));
+  const dotCount = Math.max(1, cards.length - visible + 1);
+  els.newProductsDots.innerHTML = Array.from({ length: dotCount }, (_, index) =>
+    `<button type="button" class="${index === 0 ? "active" : ""}" aria-label="Prikaži novitete od pozicije ${index + 1}" aria-current="${index === 0 ? "true" : "false"}" data-new-dot="${index}"></button>`
+  ).join("");
+  els.newProductsDots.querySelectorAll("button").forEach(dot => {
+    dot.addEventListener("click", () => {
+      els.newProductsGrid.scrollTo({ left: Number(dot.dataset.newDot || 0) * newProductsStep(), behavior: "smooth" });
+    });
+  });
+}
+
 async function loadNewProducts() {
   if (!els.newProductsGrid) return;
 
@@ -774,17 +746,15 @@ async function loadNewProducts() {
     const products = Array.isArray(data.products) ? data.products : [];
     if (!products.length) {
       els.newProductsMessage.textContent = "Novi proizvodi se trenutno ažuriraju.";
-      renderHeroShowcase([]);
       return;
     }
 
     els.newProductsMessage.classList.add("hidden");
     els.newProductsGrid.innerHTML = products.map(cardTemplate).join("");
     enrichCards(null, els.newProductsGrid);
-    renderHeroShowcase(products);
+    renderNewProductsDots();
   } catch (error) {
     els.newProductsMessage.textContent = "Noviteti će se pojaviti nakon sledećeg osvežavanja kataloga.";
-    renderHeroShowcase([]);
     console.error("Noviteti nisu dostupni", error);
   }
 }
@@ -1338,13 +1308,20 @@ els.next?.addEventListener("click", () => {
 });
 
 els.newProductsPrev?.addEventListener("click", () => {
-  els.newProductsGrid?.scrollBy({ left: -620, behavior: "smooth" });
+  els.newProductsGrid?.scrollBy({ left: -newProductsStep(), behavior: "smooth" });
 });
 
 els.newProductsNext?.addEventListener("click", () => {
-  els.newProductsGrid?.scrollBy({ left: 620, behavior: "smooth" });
+  els.newProductsGrid?.scrollBy({ left: newProductsStep(), behavior: "smooth" });
 });
 
+els.newProductsGrid?.addEventListener("scroll", syncNewProductsDots, { passive: true });
+window.addEventListener("resize", () => {
+  window.clearTimeout(window.__demoShopNewProductsResize);
+  window.__demoShopNewProductsResize = window.setTimeout(renderNewProductsDots, 120);
+});
+
+initializePromoBanner();
 loadCategories();
 loadNewProducts();
 loadProducts();

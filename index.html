@@ -6,7 +6,7 @@
   <meta name="description" content="DemoShop katalog promotivnih proizvoda sa bojama, veličinama, cenama i lagerom.">
   <title>DemoShop — Katalog promotivnih proizvoda</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
-  <link rel="stylesheet" href="style.css?v=49">
+  <link rel="stylesheet" href="style.css?v=50">
   <link rel="stylesheet" href="catalog-taxonomy.css?v=13">
 </head>
 <body>
@@ -44,21 +44,107 @@
   </nav>
 
   <main>
-    <section class="catalog-hero" aria-label="Aktuelna ponuda">
-      <div class="container hero-inner">
-        <div class="hero-copy-column">
-          <p class="eyebrow">DEMO GROUP · PROMOTIVNI PROIZVODI</p>
-          <h1>Pronađite proizvod za vaš brend.</h1>
-          <p class="hero-copy">Jedan model, sve dostupne boje i veličine. Cena i lager proveravaju se direktno za izabranu varijantu.</p>
-          <div class="hero-catalog-count"><strong id="heroTotal">1.756</strong><span>grupisanih modela u aktuelnom katalogu</span></div>
-          <div class="hero-actions">
-            <a class="hero-action-primary" href="#izdvojeno">Pogledaj izdvojeno <span aria-hidden="true">↓</span></a>
-            <a class="hero-action-secondary" href="#searchForm">Pretraži katalog</a>
+    <section class="promo-banner-section" aria-label="Aktuelna ponuda">
+      <div class="container">
+        <div id="heroShowcase" class="promo-banner" aria-roledescription="carousel" aria-label="Aktuelne DemoShop ponude">
+          <div class="promo-banner-viewport">
+            <article class="promo-banner-slide promo-banner-power active" data-hero-slide="0" aria-hidden="false">
+              <div class="promo-banner-copy">
+                <span class="promo-banner-kicker">NOVO U KATALOGU</span>
+                <h1>Edison 10PD 35W<br><em>&amp;</em> Baracuda 2 10PD</h1>
+                <p>Univerzalni putni punjači</p>
+                <div class="promo-banner-actions">
+                  <a href="?search=38.216#searchForm">Edison 10PD <b>38.216</b></a>
+                  <a href="?search=38.215#searchForm">Baracuda 2 <b>38.215</b></a>
+                </div>
+              </div>
+              <div class="promo-banner-products" aria-hidden="true">
+                <div class="promo-product promo-product-left">
+                  <span>10.000 mAh</span>
+                  <img src="https://apiv2.promosolution.services/content/ModelItem/3821610_001.webp" alt="">
+                  <small>35W · bežično punjenje</small>
+                </div>
+                <div class="promo-product promo-product-right">
+                  <span>20W</span>
+                  <img src="https://apiv2.promosolution.services/content/ModelItem/3821510_001.webp" alt="">
+                  <small>putni adapter · power bank</small>
+                </div>
+              </div>
+            </article>
+
+            <article class="promo-banner-slide promo-banner-mobile" data-hero-slide="1" aria-hidden="true" tabindex="-1">
+              <div class="promo-banner-copy">
+                <span class="promo-banner-kicker">TEHNOLOGIJA ZA SVAKI DAN</span>
+                <h1>Hopson 10PD<br><em>&amp;</em> Mestik 10PD</h1>
+                <p>Snaga koju nosite sa sobom</p>
+                <div class="promo-banner-actions">
+                  <a href="?search=38.219#searchForm">Hopson <b>38.219</b></a>
+                  <a href="?search=38.220#searchForm">Mestik <b>38.220</b></a>
+                </div>
+              </div>
+              <div class="promo-banner-products" aria-hidden="true">
+                <div class="promo-product promo-product-left">
+                  <span>RGB</span>
+                  <img src="https://apiv2.promosolution.services/content/ModelItem/3821911_001.webp" alt="">
+                  <small>magnetni bežični punjač</small>
+                </div>
+                <div class="promo-product promo-product-right">
+                  <span>10.000 mAh</span>
+                  <img src="https://apiv2.promosolution.services/content/ModelItem/3822010_001.webp" alt="">
+                  <small>kompaktan putni punjač</small>
+                </div>
+              </div>
+            </article>
+
+            <article class="promo-banner-slide promo-banner-audio" data-hero-slide="2" aria-hidden="true" tabindex="-1">
+              <div class="promo-banner-copy">
+                <span class="promo-banner-kicker">PAMETNI POSLOVNI POKLONI</span>
+                <h1>Sonix AI</h1>
+                <p>Prevod uživo i čist zvuk u jednom elegantnom uređaju</p>
+                <div class="promo-banner-actions">
+                  <a href="?search=38.211#searchForm">Pogledaj proizvod <b>38.211</b></a>
+                  <a href="#searchForm">Pretraži tehnologiju</a>
+                </div>
+              </div>
+              <div class="promo-banner-products promo-banner-single" aria-hidden="true">
+                <div class="promo-product">
+                  <span>AI</span>
+                  <img src="https://apiv2.promosolution.services/content/ModelItem/3821110_001.webp" alt="">
+                  <small>prevod poziva · prevod uživo</small>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div class="promo-banner-controls">
+            <button type="button" data-hero-prev aria-label="Prethodni baner">←</button>
+            <div class="promo-banner-dots" aria-label="Izbor banera">
+              <button type="button" class="active" data-hero-dot="0" aria-label="Prvi baner" aria-current="true"></button>
+              <button type="button" data-hero-dot="1" aria-label="Drugi baner" aria-current="false"></button>
+              <button type="button" data-hero-dot="2" aria-label="Treći baner" aria-current="false"></button>
+            </div>
+            <button type="button" data-hero-next aria-label="Sledeći baner">→</button>
           </div>
         </div>
-        <div id="heroShowcase" class="hero-showcase" aria-live="polite" aria-label="Aktuelni noviteti">
-          <div class="hero-showcase-loading"><span></span><strong>Pripremamo aktuelne novitete…</strong></div>
+        <span id="heroTotal" class="visually-hidden">1.756</span>
+      </div>
+    </section>
+
+    <section id="noviteti" class="home-new-products" aria-labelledby="newProductsTitle">
+      <div class="container">
+        <div class="new-products-heading">
+          <div>
+            <p class="eyebrow">SVEŽE IZ KATALOGA</p>
+            <h2 id="newProductsTitle">Noviteti</h2>
+          </div>
+          <div class="new-products-controls" aria-label="Pomeranje noviteta">
+            <button id="newProductsPrev" type="button" aria-label="Prethodni noviteti">←</button>
+            <button id="newProductsNext" type="button" aria-label="Sledeći noviteti">→</button>
+          </div>
         </div>
+        <p id="newProductsMessage" class="new-products-message">Učitavanje najnovijih proizvoda…</p>
+        <div id="newProductsGrid" class="new-products-track" aria-live="polite"></div>
+        <div id="newProductsDots" class="new-products-dots" aria-label="Pozicija slajdera"></div>
       </div>
     </section>
 
@@ -102,23 +188,6 @@
             <span class="highlight-art" aria-hidden="true"><i></i><i></i><i></i></span>
           </button>
         </div>
-      </div>
-    </section>
-
-    <section id="noviteti" class="home-new-products" aria-labelledby="newProductsTitle">
-      <div class="container">
-        <div class="new-products-heading">
-          <div>
-            <p class="eyebrow">SVEŽE IZ KATALOGA</p>
-            <h2 id="newProductsTitle">Noviteti</h2>
-          </div>
-          <div class="new-products-controls" aria-label="Pomeranje noviteta">
-            <button id="newProductsPrev" type="button" aria-label="Prethodni noviteti">←</button>
-            <button id="newProductsNext" type="button" aria-label="Sledeći noviteti">→</button>
-          </div>
-        </div>
-        <p id="newProductsMessage" class="new-products-message">Učitavanje najnovijih proizvoda…</p>
-        <div id="newProductsGrid" class="new-products-track" aria-live="polite"></div>
       </div>
     </section>
 
@@ -177,6 +246,6 @@
   <footer class="site-footer"><div class="container">DemoShop · Demo Group katalog · Podaci se automatski osvežavaju</div></footer>
   <script src="cart-store.js?v=7"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=49"></script>
+  <script src="script.js?v=50"></script>
 </body>
 </html>

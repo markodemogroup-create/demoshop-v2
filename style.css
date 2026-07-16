@@ -92,3 +92,56 @@
 
 /* Opis i tehničke specifikacije */
 .product-extra{border-top:1px solid var(--line);padding-bottom:80px}.info-section{border-bottom:1px solid var(--line)}.info-section summary{list-style:none;cursor:pointer;padding:22px 2px;font-size:15px;font-weight:950;text-transform:uppercase;display:flex;justify-content:space-between}.info-section summary::-webkit-details-marker{display:none}.info-section summary:after{content:"+";font-size:21px;font-weight:500}.info-section[open] summary:after{content:"−"}.info-content{padding:0 2px 24px;max-width:1150px;color:#50505a;line-height:1.7;font-size:14px}.info-content p{white-space:pre-line}.specification-columns{display:grid;grid-template-columns:1fr 1fr;gap:70px;padding:0 2px 28px}.specification-columns h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 12px}.spec-list{margin:0}.spec-list>div{display:grid;grid-template-columns:1fr 1.2fr;gap:15px;border-bottom:1px solid #eee;padding:8px 0;font-size:12px}.spec-list dt{color:var(--muted)}.spec-list dd{margin:0;text-align:right;font-weight:650}.print-methods{display:flex;gap:7px;flex-wrap:wrap}.print-methods span{background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:11px;font-weight:750}.print-methods p{font-size:12px;color:var(--muted)}@media(max-width:760px){.specification-columns{grid-template-columns:1fr;gap:28px}.spec-list>div{grid-template-columns:1fr 1fr}}
+/* v50 - PromoBox inspirisan naslovni baner i unapredjeni slider noviteta */
+.visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.promo-banner-section{padding:10px 0 0;background:#fff;overflow:hidden}
+.promo-banner{position:relative;isolation:isolate}
+.promo-banner-viewport{position:relative;height:clamp(370px,31vw,500px);overflow:hidden;border-radius:18px;background:#e8e9ec;box-shadow:0 2px 0 rgba(20,20,24,.03)}
+.promo-banner-slide{position:absolute;inset:0;display:grid;grid-template-columns:minmax(310px,.72fr) minmax(0,1.28fr);overflow:hidden;padding:clamp(34px,4vw,66px);opacity:0;visibility:hidden;transform:translateX(34px) scale(.99);transition:opacity .48s ease,transform .62s cubic-bezier(.2,.75,.2,1),visibility .48s}
+.promo-banner-slide.active{opacity:1;visibility:visible;transform:translateX(0) scale(1)}
+.promo-banner-slide:before{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(112deg,#cbd1d7 0%,#f2f1f0 49%,#d8dde4 100%)}
+.promo-banner-slide:after{content:"";position:absolute;z-index:-1;left:0;right:0;bottom:0;height:43%;background:rgba(255,255,255,.56);border-top:1px solid rgba(255,255,255,.72)}
+.promo-banner-mobile:before{background:linear-gradient(112deg,#adb9c4 0%,#eef0f2 47%,#ccd5dc 100%)}
+.promo-banner-audio:before{background:linear-gradient(115deg,#d7d0ca 0%,#f5f1ed 48%,#c7d1dc 100%)}
+.promo-banner-copy{position:relative;z-index:5;align-self:start;max-width:520px}
+.promo-banner-kicker{display:inline-flex;padding:7px 10px;border-radius:5px;background:#fff;color:#202024;font-size:10px;font-weight:950;letter-spacing:.09em;box-shadow:0 7px 20px rgba(20,20,24,.06)}
+.promo-banner-copy h1{margin:18px 0 8px;color:#111217;font-family:Georgia,"Times New Roman",serif;font-size:clamp(37px,4.15vw,66px);font-weight:500;line-height:.92;letter-spacing:-.065em}
+.promo-banner-copy h1 em{color:#707a85;font-style:normal;font-weight:400}
+.promo-banner-copy>p{margin:0;color:#30343a;font-size:clamp(14px,1.25vw,18px);font-weight:800;letter-spacing:.045em;text-transform:uppercase}
+.promo-banner-actions{position:absolute;left:0;top:clamp(232px,18.5vw,300px);display:flex;flex-wrap:wrap;gap:8px;max-width:390px}
+.promo-banner-actions a{display:inline-flex;align-items:center;gap:7px;padding:10px 12px;border:1px solid rgba(18,19,23,.18);border-radius:999px;background:rgba(255,255,255,.7);color:#17181c;font-size:10px;font-weight:800;text-decoration:none;backdrop-filter:blur(7px);transition:background .18s ease,transform .18s ease,border-color .18s ease}
+.promo-banner-actions a:hover{background:#fff;border-color:#17181c;transform:translateY(-2px)}
+.promo-banner-actions b{font-weight:950}
+.promo-banner-products{position:relative;z-index:3;min-width:0;height:100%}
+.promo-product{position:absolute;display:grid;place-items:center;width:53%;height:92%;top:-3%;filter:drop-shadow(0 24px 23px rgba(34,38,44,.18));transition:transform .65s cubic-bezier(.2,.75,.2,1)}
+.promo-product-left{left:0;transform:rotate(-7deg) translateY(10px)}
+.promo-product-right{right:-2%;transform:rotate(6deg) translateY(-1px)}
+.active .promo-product-left{animation:promo-product-left-in .75s .08s both cubic-bezier(.2,.75,.2,1)}
+.active .promo-product-right{animation:promo-product-right-in .8s .14s both cubic-bezier(.2,.75,.2,1)}
+.promo-product img{position:relative;z-index:2;width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
+.promo-product>span{position:absolute;z-index:4;right:4%;top:16%;display:grid;place-items:center;width:54px;height:54px;border:1px solid rgba(18,19,23,.35);border-radius:50%;background:rgba(255,255,255,.64);color:#1a1b20;font-size:10px;font-weight:950;text-align:center}
+.promo-product>small{position:absolute;z-index:4;left:50%;bottom:4%;transform:translateX(-50%);width:max-content;max-width:210px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.78);color:#26282d;font-size:9px;font-weight:800;text-align:center;box-shadow:0 6px 17px rgba(20,20,24,.08)}
+.promo-product.image-unavailable:before{content:"DemoShop";display:grid;place-items:center;width:72%;height:72%;border:1px solid rgba(20,20,24,.12);border-radius:28px;background:rgba(255,255,255,.46);color:#999;font-size:22px;font-weight:950}
+.promo-banner-single .promo-product{left:13%;top:-8%;width:76%;height:108%;transform:rotate(-4deg)}
+.promo-banner-single .promo-product>span{right:10%;top:20%;width:62px;height:62px;font-size:20px}
+.promo-banner-controls{display:flex;align-items:center;justify-content:center;gap:14px;height:58px}
+.promo-banner-controls>button{display:grid;place-items:center;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--ink);cursor:pointer;transition:background .18s ease,color .18s ease,border-color .18s ease,transform .18s ease}
+.promo-banner-controls>button:hover{background:var(--ink);border-color:var(--ink);color:#fff;transform:translateY(-2px)}
+.promo-banner-dots{display:flex;align-items:center;gap:7px}
+.promo-banner-dots button,.new-products-dots button{width:8px;height:8px;padding:0;border:0;border-radius:999px;background:#cad3e0;cursor:pointer;transition:width .2s ease,background .2s ease}
+.promo-banner-dots button.active,.new-products-dots button.active{width:25px;background:#33435c}
+@keyframes promo-product-left-in{from{opacity:0;transform:translateX(50px) rotate(-12deg)}to{opacity:1;transform:rotate(-7deg) translateY(10px)}}
+@keyframes promo-product-right-in{from{opacity:0;transform:translateX(80px) rotate(12deg)}to{opacity:1;transform:rotate(6deg) translateY(-1px)}}
+
+.promo-banner-section+.home-new-products{padding-top:17px}
+.new-products-heading{position:relative;display:flex;justify-content:center;align-items:center;margin-bottom:18px;text-align:center}
+.new-products-heading .eyebrow{display:none}
+.new-products-heading h2{font-size:clamp(34px,3.4vw,50px)}
+.new-products-controls{position:absolute;right:0;top:50%;transform:translateY(-50%)}
+.new-products-track{grid-auto-columns:calc((100% - 64px)/5);padding-bottom:15px}
+.new-products-dots{display:flex;align-items:center;justify-content:center;gap:7px;min-height:18px;margin-top:1px}
+
+@media(max-width:1180px){.promo-banner-slide{grid-template-columns:minmax(280px,.8fr) minmax(0,1.2fr);padding:38px}.promo-banner-copy h1{font-size:48px}.promo-banner-actions{top:215px}.new-products-track{grid-auto-columns:calc((100% - 48px)/4)}}
+@media(max-width:900px){.promo-banner-viewport{height:520px}.promo-banner-slide{grid-template-columns:1fr 1.25fr;padding:34px}.promo-banner-copy h1{font-size:42px}.promo-banner-actions{top:210px}.promo-product{width:64%}.promo-product-left{left:-8%}.promo-product-right{right:-13%}.new-products-track{grid-auto-columns:calc((100% - 32px)/3)}}
+@media(max-width:700px){.promo-banner-section{padding-top:7px}.promo-banner-viewport{height:570px;border-radius:14px}.promo-banner-slide{display:block;padding:27px 23px}.promo-banner-slide:after{height:48%}.promo-banner-copy{max-width:100%}.promo-banner-kicker{font-size:8px}.promo-banner-copy h1{margin-top:12px;font-size:37px;line-height:.96}.promo-banner-copy>p{font-size:12px}.promo-banner-actions{position:relative;top:auto;margin-top:15px;max-width:100%}.promo-banner-actions a{padding:8px 10px;font-size:9px}.promo-banner-products{position:absolute;left:12px;right:12px;bottom:10px;height:55%}.promo-product{height:100%;width:60%}.promo-product-left{left:-4%}.promo-product-right{right:-8%}.promo-product>span{width:42px;height:42px;font-size:8px}.promo-product>small{display:none}.promo-banner-single .promo-product{left:14%;top:-5%;width:76%;height:110%}.promo-banner-controls{height:50px}.promo-banner-section+.home-new-products{padding-top:11px}.new-products-heading{justify-content:flex-start;text-align:left;padding-right:96px}.new-products-controls{right:0}.new-products-track{grid-auto-columns:min(78vw,290px)}.new-products-dots{justify-content:flex-start;overflow:hidden}.new-products-dots button{flex:none}}
+@media(prefers-reduced-motion:reduce){.promo-banner-slide,.promo-product,.promo-banner-actions a{animation:none!important;transition:none!important}}
