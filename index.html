@@ -6,10 +6,10 @@
   <meta name="description" content="DemoShop katalog promotivnih proizvoda sa bojama, veličinama, cenama i lagerom.">
   <title>DemoShop — Katalog promotivnih proizvoda</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
-  <link rel="stylesheet" href="style.css?v=50">
+  <link rel="stylesheet" href="style.css?v=51">
   <link rel="stylesheet" href="catalog-taxonomy.css?v=13">
 </head>
-<body>
+<body data-demoshop-build="51">
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="index.html" aria-label="DemoShop početna">
@@ -143,8 +143,62 @@
           </div>
         </div>
         <p id="newProductsMessage" class="new-products-message">Učitavanje najnovijih proizvoda…</p>
-        <div id="newProductsGrid" class="new-products-track" aria-live="polite"></div>
+        <div class="new-products-viewport">
+          <div id="newProductsGrid" class="new-products-track" aria-live="polite"></div>
+        </div>
         <div id="newProductsDots" class="new-products-dots" aria-label="Pozicija slajdera"></div>
+      </div>
+    </section>
+
+    <section class="home-promo-stories" aria-labelledby="promoStoriesTitle">
+      <div class="container">
+        <div class="promo-stories-heading">
+          <div>
+            <p class="eyebrow">IDEJE ZA VAŠ BREND</p>
+            <h2 id="promoStoriesTitle">Izdvajamo iz kataloga</h2>
+          </div>
+          <div class="promo-stories-arrows" aria-label="Pomeranje promotivnih banera">
+            <button id="promoStoriesPrev" type="button" aria-label="Prethodni promotivni baner">←</button>
+            <button id="promoStoriesNext" type="button" aria-label="Sledeći promotivni baner">→</button>
+          </div>
+        </div>
+        <div class="promo-stories-viewport">
+          <div id="promoStoriesTrack" class="promo-stories-track">
+            <a class="promo-story promo-story-dark" href="?search=DS3#searchForm">
+              <span>POSLOVNA ELEGANCIJA</span><strong>Swiss made olovke</strong><small>Preciznost koja ostavlja utisak</small>
+              <img src="https://apiv2.promosolution.services/content/ModelItem/10218_000.webp" alt="DS3 MAT olovka">
+            </a>
+            <a class="promo-story promo-story-blue" href="?search=QS40#searchForm">
+              <span>NOVO U KATALOGU</span><strong>QS40 AIR</strong><small>Savremeni dizajn za svaki sto</small>
+              <img src="https://apiv2.promosolution.services/content/ModelItem/10220_000.webp" alt="QS40 AIR olovka">
+            </a>
+            <a class="promo-story promo-story-green" href="?search=KIND%20SOFT#searchForm">
+              <span>ODRŽIVI IZBOR</span><strong>Pišite zeleniju priču</strong><small>KIND SOFT i ZED kolekcija</small>
+              <img src="https://apiv2.promosolution.services/content/ModelItem/10216_000.webp" alt="KIND SOFT olovka">
+            </a>
+            <a class="promo-story promo-story-violet" href="?search=MULTI%20KEY%20TAG#searchForm">
+              <span>PAMETNI DODACI</span><strong>Važne stvari na dohvat ruke</strong><small>MULTI KEY TAG</small>
+              <img src="https://apiv2.promosolution.services/content/ModelItem/38223_000.webp" alt="MULTI KEY TAG privezak">
+            </a>
+            <a class="promo-story promo-story-paper" href="?search=DOMINGO%20A5#searchForm">
+              <span>ZA SVAKU DOBRU IDEJU</span><strong>Beležnice sa karakterom</strong><small>DOMINGO A5 i FUTRO</small>
+              <img src="https://apiv2.promosolution.services/content/ModelItem/34799_000.webp" alt="DOMINGO A5 beležnica">
+            </a>
+            <a class="promo-story promo-story-rose" href="?search=NOTO%20ROSE%20GOLD#searchForm">
+              <span>MALI POKLON, VELIKI UTISAK</span><strong>NOTO Rose Gold</strong><small>Elegantan privezak za ključeve</small>
+              <img src="https://apiv2.promosolution.services/content/ModelItem/33248_000.webp" alt="NOTO Rose Gold privezak">
+            </a>
+            <a class="promo-story promo-story-home" href="?search=PIGNA%20MAXI#searchForm">
+              <span>TRENUTAK ZA PAUZU</span><strong>PIGNA kolekcija</strong><small>Staklene šolje sa dvostrukim zidom</small>
+              <img src="https://apiv2.promosolution.services/content/ModelItem/44185_000.webp" alt="PIGNA MAXI šolje">
+            </a>
+            <a class="promo-story promo-story-red" href="?search=SONDER#searchForm">
+              <span>PRAKTIČNO I UVEK PRI RUCI</span><strong>SONDER 4/1</strong><small>Otvarač koji ide svuda sa vama</small>
+              <img src="https://apiv2.promosolution.services/content/ModelItem/32363_000.webp" alt="SONDER otvarač">
+            </a>
+          </div>
+        </div>
+        <div id="promoStoriesDots" class="promo-stories-dots" aria-label="Pozicija promotivnog slidera"></div>
       </div>
     </section>
 
@@ -246,6 +300,6 @@
   <footer class="site-footer"><div class="container">DemoShop · Demo Group katalog · Podaci se automatski osvežavaju</div></footer>
   <script src="cart-store.js?v=7"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=50"></script>
+  <script src="script.js?v=51"></script>
 </body>
 </html>

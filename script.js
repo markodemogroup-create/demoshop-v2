@@ -32,6 +32,10 @@ const els = {
   newProductsPrev: document.getElementById("newProductsPrev"),
   newProductsNext: document.getElementById("newProductsNext"),
   newProductsDots: document.getElementById("newProductsDots"),
+  promoStoriesTrack: document.getElementById("promoStoriesTrack"),
+  promoStoriesDots: document.getElementById("promoStoriesDots"),
+  promoStoriesPrev: document.getElementById("promoStoriesPrev"),
+  promoStoriesNext: document.getElementById("promoStoriesNext"),
   catalogFilters: document.getElementById("catalogFilters"),
   dynamicFilters: document.getElementById("dynamicFilters"),
   categoryFilterTree: document.getElementById("categoryFilterTree"),
@@ -61,6 +65,8 @@ const variantDetailCache = new Map();
 const groupAvailabilityCache = new Map();
 let heroSlideIndex = 0;
 let heroRotationTimer;
+let newProductsCarousel;
+let promoStoriesCarousel;
 let menuCategories = [];
 const menuSelection = { categoryCode: "", subCategoryCode: "" };
 
@@ -698,38 +704,115 @@ function initializePromoBanner() {
   startHeroRotation();
 }
 
-function newProductsStep() {
-  const card = els.newProductsGrid?.querySelector(".product-card");
-  if (!card || !els.newProductsGrid) return 320;
-  const styles = window.getComputedStyle(els.newProductsGrid);
-  return card.getBoundingClientRect().width + (Number.parseFloat(styles.columnGap || styles.gap) || 16);
-}
+function createCircularCarousel({ track, dots, previous, next, itemSelector, autoMs = 0, label = "slajd" }) {
+  if (!track || !dots) return null;
+  const total = track.querySelectorAll(itemSelector).length;
+  if (!total) return null;
 
-function syncNewProductsDots() {
-  if (!els.newProductsGrid || !els.newProductsDots) return;
-  const step = newProductsStep();
-  const activeIndex = Math.max(0, Math.round(els.newProductsGrid.scrollLeft / step));
-  els.newProductsDots.querySelectorAll("button").forEach((dot, index) => {
-    const active = index === Math.min(activeIndex, els.newProductsDots.children.length - 1);
-    dot.classList.toggle("active", active);
-    dot.setAttribute("aria-current", active ? "true" : "false");
-  });
-}
+  let current = 0;
+  let animating = false;
+  let timer;
 
-function renderNewProductsDots() {
-  if (!els.newProductsGrid || !els.newProductsDots) return;
-  const cards = els.newProductsGrid.querySelectorAll(".product-card");
-  const step = newProductsStep();
-  const visible = Math.max(1, Math.floor((els.newProductsGrid.clientWidth + 2) / step));
-  const dotCount = Math.max(1, cards.length - visible + 1);
-  els.newProductsDots.innerHTML = Array.from({ length: dotCount }, (_, index) =>
-    `<button type="button" class="${index === 0 ? "active" : ""}" aria-label="Prikaži novitete od pozicije ${index + 1}" aria-current="${index === 0 ? "true" : "false"}" data-new-dot="${index}"></button>`
-  ).join("");
-  els.newProductsDots.querySelectorAll("button").forEach(dot => {
-    dot.addEventListener("click", () => {
-      els.newProductsGrid.scrollTo({ left: Number(dot.dataset.newDot || 0) * newProductsStep(), behavior: "smooth" });
+  const itemStep = () => {
+    const item = track.querySelector(itemSelector);
+    if (!item) return 320;
+    const styles = window.getComputedStyle(track);
+    return item.getBoundingClientRect().width + (Number.parseFloat(styles.columnGap || styles.gap) || 16);
+  };
+
+  const syncDots = () => {
+    dots.querySelectorAll("button").forEach((dot, index) => {
+      const active = index === current;
+      dot.classList.toggle("active", active);
+      dot.setAttribute("aria-current", active ? "true" : "false");
     });
+  };
+
+  const stop = () => {
+    window.clearInterval(timer);
+    timer = undefined;
+  };
+
+  const start = () => {
+    stop();
+    if (!autoMs || total < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    timer = window.setInterval(() => move(1, false), autoMs);
+  };
+
+  const completeAfterTransition = callback => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      track.removeEventListener("transitionend", finish);
+      callback();
+    };
+    track.addEventListener("transitionend", finish, { once: true });
+    window.setTimeout(finish, 620);
+  };
+
+  const move = (direction, restart = true) => {
+    if (animating || total < 2) return;
+    animating = true;
+    stop();
+    const step = itemStep();
+
+    if (direction > 0) {
+      track.style.transition = "transform .48s cubic-bezier(.2,.72,.2,1)";
+      track.style.transform = `translate3d(-${step}px,0,0)`;
+      completeAfterTransition(() => {
+        track.append(track.firstElementChild);
+        track.style.transition = "none";
+        track.style.transform = "translate3d(0,0,0)";
+        current = (current + 1) % total;
+        animating = false;
+        syncDots();
+        if (restart) start();
+      });
+    } else {
+      track.prepend(track.lastElementChild);
+      track.style.transition = "none";
+      track.style.transform = `translate3d(-${step}px,0,0)`;
+      window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+        track.style.transition = "transform .48s cubic-bezier(.2,.72,.2,1)";
+        track.style.transform = "translate3d(0,0,0)";
+        completeAfterTransition(() => {
+          current = (current - 1 + total) % total;
+          animating = false;
+          syncDots();
+          if (restart) start();
+        });
+      }));
+    }
+  };
+
+  const jumpTo = target => {
+    if (animating || target === current) return;
+    stop();
+    const distance = (target - current + total) % total;
+    for (let index = 0; index < distance; index += 1) track.append(track.firstElementChild);
+    track.style.transition = "none";
+    track.style.transform = "translate3d(0,0,0)";
+    current = target;
+    syncDots();
+    start();
+  };
+
+  dots.innerHTML = Array.from({ length: total }, (_, index) =>
+    `<button type="button" class="${index === 0 ? "active" : ""}" aria-label="Prikaži ${label} ${index + 1}" aria-current="${index === 0 ? "true" : "false"}" data-carousel-dot="${index}"></button>`
+  ).join("");
+  dots.querySelectorAll("button").forEach(dot => {
+    dot.addEventListener("click", () => jumpTo(Number(dot.dataset.carouselDot || 0)));
   });
+  previous?.addEventListener("click", () => move(-1));
+  next?.addEventListener("click", () => move(1));
+  track.closest("section")?.addEventListener("pointerenter", stop);
+  track.closest("section")?.addEventListener("pointerleave", start);
+  track.closest("section")?.addEventListener("focusin", stop);
+  track.closest("section")?.addEventListener("focusout", start);
+  start();
+
+  return { move, start, stop, refresh: () => { track.style.transition = "none"; track.style.transform = "translate3d(0,0,0)"; } };
 }
 
 async function loadNewProducts() {
@@ -752,7 +835,16 @@ async function loadNewProducts() {
     els.newProductsMessage.classList.add("hidden");
     els.newProductsGrid.innerHTML = products.map(cardTemplate).join("");
     enrichCards(null, els.newProductsGrid);
-    renderNewProductsDots();
+    newProductsCarousel?.stop();
+    newProductsCarousel = createCircularCarousel({
+      track: els.newProductsGrid,
+      dots: els.newProductsDots,
+      previous: els.newProductsPrev,
+      next: els.newProductsNext,
+      itemSelector: ".product-card",
+      autoMs: 5600,
+      label: "novitet",
+    });
   } catch (error) {
     els.newProductsMessage.textContent = "Noviteti će se pojaviti nakon sledećeg osvežavanja kataloga.";
     console.error("Noviteti nisu dostupni", error);
@@ -1307,21 +1399,24 @@ els.next?.addEventListener("click", () => {
   if (state.page < state.totalPages) { state.page += 1; loadProducts(); window.scrollTo({ top: 260, behavior: "smooth" }); }
 });
 
-els.newProductsPrev?.addEventListener("click", () => {
-  els.newProductsGrid?.scrollBy({ left: -newProductsStep(), behavior: "smooth" });
-});
-
-els.newProductsNext?.addEventListener("click", () => {
-  els.newProductsGrid?.scrollBy({ left: newProductsStep(), behavior: "smooth" });
-});
-
-els.newProductsGrid?.addEventListener("scroll", syncNewProductsDots, { passive: true });
 window.addEventListener("resize", () => {
-  window.clearTimeout(window.__demoShopNewProductsResize);
-  window.__demoShopNewProductsResize = window.setTimeout(renderNewProductsDots, 120);
+  window.clearTimeout(window.__demoShopCarouselResize);
+  window.__demoShopCarouselResize = window.setTimeout(() => {
+    newProductsCarousel?.refresh();
+    promoStoriesCarousel?.refresh();
+  }, 120);
 });
 
 initializePromoBanner();
+promoStoriesCarousel = createCircularCarousel({
+  track: els.promoStoriesTrack,
+  dots: els.promoStoriesDots,
+  previous: els.promoStoriesPrev,
+  next: els.promoStoriesNext,
+  itemSelector: ".promo-story",
+  autoMs: 6200,
+  label: "promotivni baner",
+});
 loadCategories();
 loadNewProducts();
 loadProducts();
