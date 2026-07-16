@@ -44,7 +44,7 @@
 }
 
 .document-item span {
-  color: var(--red);
+  color: var(--brand-teal-dark);
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
@@ -61,7 +61,7 @@
 }
 
 .document-item:not(.document-item-static):hover {
-  border-color: var(--red);
+  border-color: var(--brand-teal);
   box-shadow: 0 8px 25px rgba(20, 20, 24, .06);
 }
 

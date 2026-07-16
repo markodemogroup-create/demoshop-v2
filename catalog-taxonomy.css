@@ -34,9 +34,9 @@
 }
 
 .menu-tertiary button:hover {
-  color: var(--red) !important;
+  color: var(--brand-teal-dark) !important;
 }
 
 .menu-tertiary button:hover::before {
-  background: var(--red);
+  background: var(--brand-teal);
 }
