@@ -115,11 +115,18 @@ function productDisplayName(value) {
   return { title, description: parts.join(", ") };
 }
 
+function stripVariantSize(value) {
+  return String(value || "").trim().replace(
+    /-(?:XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|[2-9]XL|[2-9]XS|UNI|UNIV|UNIVERSAL|ONE\s?SIZE|[0-9]{1,3}(?:\/[0-9]{1,3})?M?)$/i,
+    ""
+  );
+}
+
 function modelAssetIds(...values) {
   const ids = [];
 
   values.filter(Boolean).forEach(value => {
-    const code = String(value).trim().replace(/-(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|[2-9]XL|[0-9]{2,3})$/i, "");
+    const code = stripVariantSize(value);
     const parts = code.split(".").filter(Boolean);
 
     if (parts.length >= 3 && /^\d{1,4}$/.test(parts[parts.length - 1])) {
@@ -328,7 +335,7 @@ function cardArrivalSummary(detail) {
 function variantPreviewItems(product) {
   const seen = new Set();
   return (Array.isArray(product?.colors) ? product.colors : []).map(color => {
-    const rawCode = String(color?.representativeCode || "").trim().replace(/-(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|[2-9]XL|[0-9]{2,3})$/i, "");
+    const rawCode = stripVariantSize(color?.representativeCode || "");
     const assetId = rawCode.replace(/[^a-zA-Z0-9]/g, "") || String(color?.representativeVariantId || "").split("-")[0].replace(/[^a-zA-Z0-9]/g, "");
     const url = assetId ? `https://apiv2.promosolution.services/content/ModelItem/${assetId}_001.webp` : "";
     if (!url || seen.has(url)) return null;
@@ -425,7 +432,7 @@ async function fetchVariantDetail(id) {
   if (!id) return null;
   if (variantDetailCache.has(id)) return variantDetailCache.get(id);
 
-  const detailPromise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=48`, {
+  const detailPromise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=49`, {
     headers: { Accept: "application/json" },
   })
     .then(async response => {
@@ -442,7 +449,7 @@ async function fetchVariantDetail(id) {
 async function fetchGroupAvailability(model) {
   if (!model) return null;
   if (groupAvailabilityCache.has(model)) return groupAvailabilityCache.get(model);
-  const promise = fetch(`${API_BASE}/group-availability?model=${encodeURIComponent(model)}&v=48`, {
+  const promise = fetch(`${API_BASE}/group-availability?model=${encodeURIComponent(model)}&v=49`, {
     headers: { Accept: "application/json" },
   }).then(async response => {
     if (!response.ok) return null;
@@ -470,6 +477,7 @@ function applyCardDetail(card, detail, availability = null) {
   const modelImageUrl = modelImageId
     ? `https://apiv2.promosolution.services/content/ModelItem/${modelImageId}_000.webp`
     : "";
+  const fallbackImage = detail?.image || availability?.image || "";
 
   if (modelImageUrl) {
     image.alt = detail?.name || "Proizvod";
@@ -479,16 +487,16 @@ function applyCardDetail(card, detail, availability = null) {
     };
     image.onerror = () => {
       image.onerror = null;
-      if (detail?.image) {
-        image.src = detail.image;
+      if (fallbackImage) {
+        image.src = fallbackImage;
       } else {
         media?.classList.add("no-image");
       }
     };
     image.src = modelImageUrl;
-  } else if (detail?.image) {
-    image.src = detail.image;
-    image.alt = detail.name || "Proizvod";
+  } else if (fallbackImage) {
+    image.src = fallbackImage;
+    image.alt = detail?.name || "Proizvod";
     image.classList.add("loaded");
   } else {
     const rawId = card.dataset.detailId || "";
@@ -553,6 +561,8 @@ function applyCardDetail(card, detail, availability = null) {
   const detailImages = [...new Set([
     detail?.image,
     ...(Array.isArray(detail?.images) ? detail.images : []),
+    availability?.image,
+    ...(Array.isArray(availability?.images) ? availability.images : []),
   ].filter(Boolean))];
   const modelImageIds = String(card.dataset.modelImageIds || modelImageId)
     .split(",")
@@ -754,7 +764,7 @@ async function loadNewProducts() {
   if (!els.newProductsGrid) return;
 
   try {
-    const response = await fetch(`${API_BASE}/new-products?limit=12&v=48`, {
+    const response = await fetch(`${API_BASE}/new-products?limit=12&v=49`, {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -949,6 +959,29 @@ const FACET_CONFIG = [
   ["equipment", "equipment", "Dodatna oprema"],
 ];
 
+const COLOR_FILTER_META = {
+  "CRN": ["Crna", "#000000"], "PL": ["Plava", "#04386d"],
+  "BL": ["Bela", "#ffffff"], "CV": ["Crvena", "#d90504"],
+  "ZL": ["Zelena", "#094705"], "SI": ["Siva", "#b9bdc2"],
+  "BŽ": ["Bež", "#e8dfc8"], "BZ": ["Bež", "#e8dfc8"],
+  "OR": ["Narandžasta", "#ff6700"], "ŽT": ["Žuta", "#ffc711"],
+  "ZT": ["Žuta", "#ffc711"], "PK": ["Roze", "#e22caa"],
+  "LJ": ["Ljubičasta", "#5d00a8"], "BR": ["Braon", "#6d2508"],
+  "PE": ["Petrolej", "#0b6170"], "TEG": ["Teget", "#063f73"],
+  "SLV": ["Srebrna", "linear-gradient(90deg,#8d8f91,#f6f6f6,#8d8f91)"],
+  "GD": ["Zlatna", "linear-gradient(90deg,#e2ad35,#fff0a6,#d5961d)"],
+  "MT": ["Metallic", "linear-gradient(90deg,#9a9a9a,#f4f4f4,#777)"],
+};
+
+function colorFilterMeta(value) {
+  const raw = String(value || "").trim();
+  const code = raw.replace(/^B\s*-\s*/i, "").toUpperCase();
+  const known = COLOR_FILTER_META[code];
+  return known
+    ? { name: known[0], background: known[1] }
+    : { name: raw, background: "#d6d7da" };
+}
+
 function selectedFilterCount() {
   return Object.entries(state.filters).reduce((total, [key, value]) =>
     total + (Array.isArray(value) ? value.length : value ? 1 : 0), 0
@@ -980,6 +1013,15 @@ function renderCategoryFilterTree() {
 function renderFacetSection(items, stateKey, title, open = false) {
   if (!Array.isArray(items) || !items.length) return "";
   const selected = new Set(Array.isArray(state.filters[stateKey]) ? state.filters[stateKey] : []);
+  if (stateKey === "color") {
+    const swatches = items.map(item => {
+      const value = String(item.value ?? "");
+      const meta = colorFilterMeta(value);
+      const count = Number(item.count || 0).toLocaleString("sr-RS");
+      return `<label class="color-filter-option" title="${escapeHtml(meta.name)} (${count})"><input type="checkbox" data-filter-key="${stateKey}" value="${escapeHtml(value)}" ${selected.has(value) ? "checked" : ""}><span style="--swatch:${escapeHtml(meta.background)}" aria-hidden="true"></span><b class="sr-only">${escapeHtml(meta.name)}</b></label>`;
+    }).join("");
+    return `<details class="filter-section color-filter-section" ${open ? "open" : ""}><summary>${escapeHtml(title)}</summary><div class="color-filter-grid">${swatches}</div></details>`;
+  }
   const options = items.map(item => {
     const value = String(item.value ?? "");
     const label = String(item.label ?? item.value ?? "");
@@ -1066,7 +1108,7 @@ async function loadProducts() {
 
   try {
     const endpoint = state.status
-      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=48`
+      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=49`
       : `${API_BASE}/products-grouped?${params}`;
     const response = await fetch(endpoint, {
       headers: { Accept: "application/json" },
