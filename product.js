@@ -64,7 +64,7 @@ const detailCache = new Map();
 async function getVariantDetail(id) {
   if (!id) return null;
   if (detailCache.has(id)) return detailCache.get(id);
-  const promise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=47`, {
+  const promise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=48`, {
     headers: { Accept: "application/json" },
   }).then(async response => {
     if (!response.ok) return null;

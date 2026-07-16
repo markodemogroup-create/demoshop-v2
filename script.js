@@ -31,6 +31,12 @@ const els = {
   newProductsMessage: document.getElementById("newProductsMessage"),
   newProductsPrev: document.getElementById("newProductsPrev"),
   newProductsNext: document.getElementById("newProductsNext"),
+  catalogFilters: document.getElementById("catalogFilters"),
+  dynamicFilters: document.getElementById("dynamicFilters"),
+  categoryFilterTree: document.getElementById("categoryFilterTree"),
+  clearAllFilters: document.getElementById("clearAllFilters"),
+  mobileFiltersToggle: document.getElementById("mobileFiltersToggle"),
+  mobileFilterCount: document.getElementById("mobileFilterCount"),
 };
 
 const state = {
@@ -41,12 +47,17 @@ const state = {
   subCategory: "",
   collectionLabel: "",
   status: "",
+  filters: {
+    brand: [], color: [], size: [], facetStatus: [], print: [], material: [],
+    capacity: [], theme: [], equipment: [], minPrice: "", maxPrice: "",
+  },
   requestId: 0,
   suggestionRequestId: 0,
   suggestionIndex: -1,
 };
 
 const variantDetailCache = new Map();
+const groupAvailabilityCache = new Map();
 let heroSlideIndex = 0;
 let heroRotationTimer;
 let menuCategories = [];
@@ -56,6 +67,11 @@ const initialUrlParams = new URLSearchParams(window.location.search);
 state.search = initialUrlParams.get("search") || "";
 state.category = initialUrlParams.get("category") || "";
 state.subCategory = initialUrlParams.get("subCategory") || "";
+Object.keys(state.filters).forEach(key => {
+  state.filters[key] = ["minPrice", "maxPrice"].includes(key)
+    ? (initialUrlParams.get(key) || "")
+    : initialUrlParams.getAll(key);
+});
 if (els.searchInput) els.searchInput.value = state.search;
 
 const CATEGORY_LABELS = {
@@ -236,6 +252,14 @@ function formatPrice(value) {
     : "Cena na upit";
 }
 
+function formatPriceRange(minValue, maxValue) {
+  const min = Number(minValue);
+  const max = Number(maxValue);
+  if (!Number.isFinite(min) || min <= 0) return "Cena na upit";
+  if (!Number.isFinite(max) || max <= 0 || Math.abs(max - min) < 0.005) return formatPrice(min);
+  return `${formatPrice(min)} – ${formatPrice(max)}`;
+}
+
 function productBadgeState(detail) {
   const statuses = Array.isArray(detail?.statuses) ? detail.statuses : [];
   const printMethods = Array.isArray(detail?.printMethods) ? detail.printMethods : [];
@@ -355,9 +379,13 @@ function cardTemplate(product, index) {
   const category = [product.category, product.subCategory].filter(Boolean).join(" · ");
   const display = productDisplayName(product.name);
   const previews = variantPreviewItems(product);
+  const groupStockState = product.stockKnown
+    ? cardStockState(product.stock)
+    : { className: "loading", label: "Provera stanja…", amount: "" };
+  const groupPrice = formatPriceRange(product.priceMin, product.priceMax);
 
   return `
-    <article class="product-card" data-detail-id="${escapeHtml(product.representativeVariantId || "")}" data-model-image-id="${escapeHtml(modelImageId)}" data-model-image-ids="${escapeHtml(imageIds.join(","))}" data-index="${index}">
+    <article class="product-card" data-detail-id="${escapeHtml(product.representativeVariantId || "")}" data-model="${escapeHtml(model)}" data-group-stock-known="${product.stockKnown ? "true" : "false"}" data-group-stock="${product.stockKnown ? escapeHtml(product.stock) : ""}" data-group-price-min="${escapeHtml(product.priceMin ?? "")}" data-group-price-max="${escapeHtml(product.priceMax ?? "")}" data-model-image-id="${escapeHtml(modelImageId)}" data-model-image-ids="${escapeHtml(imageIds.join(","))}" data-index="${index}">
       <a class="card-image-link" href="${href}" aria-label="Otvori ${escapeHtml(product.name || model)}">
         <div class="card-media">
           <div class="image-skeleton"></div>
@@ -376,13 +404,13 @@ function cardTemplate(product, index) {
           ${previews.map((preview, previewIndex) => `<button type="button" data-preview-src="${escapeHtml(preview.url)}" aria-label="Prikaži varijantu ${escapeHtml(preview.label)}" ${previewIndex === 0 ? 'class="active"' : ""}><img src="${escapeHtml(preview.url)}" alt="" loading="lazy"></button>`).join("")}
           ${Number(product.colorCount || 0) > previews.length ? `<small>+${Number(product.colorCount) - previews.length} više</small>` : ""}
         </div>` : ""}
-        <div class="card-stock card-stock-loading" aria-live="polite">
+        <div class="card-stock card-stock-${groupStockState.className}" aria-live="polite">
           <span class="card-stock-dot" aria-hidden="true"></span>
-          <span><strong>Provera stanja…</strong><small></small></span>
+          <span><strong>${escapeHtml(groupStockState.label)}</strong><small>${escapeHtml(groupStockState.amount)}</small></span>
         </div>
         <div class="card-arrival hidden"><span class="arrival-truck" aria-hidden="true"></span><span><strong></strong><small></small></span></div>
         <div class="card-meta">
-          <div><span class="card-price">Učitavanje…</span><small>po komadu</small></div>
+          <div><span class="card-price">${escapeHtml(groupPrice)}</span><small>po komadu</small></div>
           <a class="card-arrow" href="${href}" aria-label="Detalji proizvoda">→</a>
         </div>
         <div class="variant-summary">
@@ -397,7 +425,7 @@ async function fetchVariantDetail(id) {
   if (!id) return null;
   if (variantDetailCache.has(id)) return variantDetailCache.get(id);
 
-  const detailPromise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=47`, {
+  const detailPromise = fetch(`${API_BASE}/variant-detail?id=${encodeURIComponent(id)}&v=48`, {
     headers: { Accept: "application/json" },
   })
     .then(async response => {
@@ -411,7 +439,21 @@ async function fetchVariantDetail(id) {
   return detailPromise;
 }
 
-function applyCardDetail(card, detail) {
+async function fetchGroupAvailability(model) {
+  if (!model) return null;
+  if (groupAvailabilityCache.has(model)) return groupAvailabilityCache.get(model);
+  const promise = fetch(`${API_BASE}/group-availability?model=${encodeURIComponent(model)}&v=48`, {
+    headers: { Accept: "application/json" },
+  }).then(async response => {
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.success ? data : null;
+  }).catch(() => null);
+  groupAvailabilityCache.set(model, promise);
+  return promise;
+}
+
+function applyCardDetail(card, detail, availability = null) {
   const skeleton = card.querySelector(".image-skeleton");
   const image = card.querySelector(".card-image-primary");
   const hoverImage = card.querySelector(".card-image-hover");
@@ -460,9 +502,19 @@ function applyCardDetail(card, detail) {
       card.querySelector(".card-media")?.classList.add("no-image");
     }
   }
-  price.textContent = formatPrice(detail?.price);
+  const groupPriceMin = Number(card.dataset.groupPriceMin);
+  const groupPriceMax = Number(card.dataset.groupPriceMax);
+  price.textContent = Number.isFinite(groupPriceMin) && groupPriceMin > 0
+    ? formatPriceRange(groupPriceMin, groupPriceMax)
+    : formatPriceRange(availability?.priceMin ?? detail?.price, availability?.priceMax ?? detail?.price);
   if (stockElement) {
-    const stockState = cardStockState(detail?.stock);
+    const groupStockKnown = card.dataset.groupStockKnown === "true";
+    const stockValue = groupStockKnown
+      ? Number(card.dataset.groupStock)
+      : availability?.stockKnown
+        ? availability.stock
+        : detail?.stock;
+    const stockState = cardStockState(stockValue);
     stockElement.className = `card-stock card-stock-${stockState.className}`;
     const label = stockElement.querySelector("strong");
     const amount = stockElement.querySelector("small");
@@ -552,9 +604,13 @@ async function enrichCards(requestId, root = els.grid) {
       const card = cards[cursor++];
       try {
         const detail = await fetchVariantDetail(card.dataset.detailId);
-        if (isCurrent()) applyCardDetail(card, detail);
+        const availability = !detail
+          ? await fetchGroupAvailability(card.dataset.model || "")
+          : null;
+        if (isCurrent()) applyCardDetail(card, detail, availability);
       } catch {
-        if (isCurrent()) applyCardDetail(card, null);
+        const availability = await fetchGroupAvailability(card.dataset.model || "");
+        if (isCurrent()) applyCardDetail(card, null, availability);
       }
     }
   }
@@ -698,7 +754,7 @@ async function loadNewProducts() {
   if (!els.newProductsGrid) return;
 
   try {
-    const response = await fetch(`${API_BASE}/new-products?limit=12&v=47`, {
+    const response = await fetch(`${API_BASE}/new-products?limit=12&v=48`, {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -735,6 +791,7 @@ function closeNewMenu() {
 }
 
 function applyStatusCollection(status, label) {
+  clearAdvancedFilters();
   state.status = status;
   state.category = "";
   state.subCategory = "";
@@ -752,6 +809,7 @@ function applyStatusCollection(status, label) {
 }
 
 function applyCategory(category, subCategory = "", options = {}) {
+  if (!options.preserveFilters) clearAdvancedFilters();
   state.status = "";
   state.category = category;
   state.subCategory = subCategory;
@@ -873,9 +931,125 @@ async function loadCategories() {
     menuSelection.subCategoryCode = state.subCategory;
     renderCategoriesMenu();
     updateHomeHighlightCounts(menuCategories);
+    renderCategoryFilterTree();
   } catch (error) {
     console.error("Kategorije nisu učitane", error);
   }
+}
+
+const FACET_CONFIG = [
+  ["brands", "brand", "Brend"],
+  ["colors", "color", "Boja"],
+  ["statuses", "facetStatus", "Status"],
+  ["sizes", "size", "Veličina"],
+  ["printMethods", "print", "Štampa"],
+  ["materials", "material", "Materijal"],
+  ["capacities", "capacity", "Kapacitet"],
+  ["themes", "theme", "Tema"],
+  ["equipment", "equipment", "Dodatna oprema"],
+];
+
+function selectedFilterCount() {
+  return Object.entries(state.filters).reduce((total, [key, value]) =>
+    total + (Array.isArray(value) ? value.length : value ? 1 : 0), 0
+  );
+}
+
+function updateFilterCounter() {
+  const count = selectedFilterCount();
+  if (els.mobileFilterCount) els.mobileFilterCount.textContent = String(count);
+  if (els.clearAllFilters) els.clearAllFilters.hidden = !(count || state.category || state.subCategory);
+}
+
+function renderCategoryFilterTree() {
+  if (!els.categoryFilterTree || !menuCategories.length) return;
+  const activeCategory = menuCategories.find(item => item.code === state.category);
+  const categoriesHtml = menuCategories.map(category => `
+    <button type="button" class="${category.code === state.category ? "active" : ""}" data-side-category="${escapeHtml(category.code)}">
+      <span>${escapeHtml(categoryLabel(category.code))}</span><small>${Number(category.count || 0).toLocaleString("sr-RS")}</small>
+    </button>`).join("");
+  const subHtml = activeCategory
+    ? (activeCategory.subCategories || []).map(sub => `
+      <button type="button" class="sub ${sub.code === state.subCategory ? "active" : ""}" data-side-category="${escapeHtml(activeCategory.code)}" data-side-subcategory="${escapeHtml(sub.code)}">
+        <span>${escapeHtml(subCategoryLabel(sub.code))}</span><small>${Number(sub.count || 0).toLocaleString("sr-RS")}</small>
+      </button>`).join("")
+    : "";
+  els.categoryFilterTree.innerHTML = `<div class="filter-category-title">Kategorija</div><div class="filter-category-list">${categoriesHtml}${subHtml}</div>`;
+}
+
+function renderFacetSection(items, stateKey, title, open = false) {
+  if (!Array.isArray(items) || !items.length) return "";
+  const selected = new Set(Array.isArray(state.filters[stateKey]) ? state.filters[stateKey] : []);
+  const options = items.map(item => {
+    const value = String(item.value ?? "");
+    const label = String(item.label ?? item.value ?? "");
+    return `<label class="filter-option"><input type="checkbox" data-filter-key="${stateKey}" value="${escapeHtml(value)}" ${selected.has(value) ? "checked" : ""}><span>${escapeHtml(label)}</span><small>${Number(item.count || 0).toLocaleString("sr-RS")}</small></label>`;
+  }).join("");
+  return `<details class="filter-section" ${open ? "open" : ""}><summary>${escapeHtml(title)}</summary><div class="filter-options ${items.length > 10 ? "scrollable" : ""}">${options}</div></details>`;
+}
+
+function renderDynamicFilters(data) {
+  if (!els.dynamicFilters) return;
+  const facets = data?.facets || {};
+  const sections = FACET_CONFIG.map(([facetKey, stateKey, title], index) =>
+    renderFacetSection(facets[facetKey], stateKey, title, index < 3)
+  ).join("");
+  const price = facets.price;
+  const priceSection = price ? `<details class="filter-section" open><summary>Cena</summary><div class="price-filter"><input id="filterMinPrice" type="number" min="0" step="0.01" placeholder="Min ${Number(price.min).toFixed(2)}" value="${escapeHtml(state.filters.minPrice)}"><input id="filterMaxPrice" type="number" min="0" step="0.01" placeholder="Max ${Number(price.max).toFixed(2)}" value="${escapeHtml(state.filters.maxPrice)}"><button type="button" data-apply-price>Primeni cenu</button></div></details>` : "";
+  els.dynamicFilters.innerHTML = sections || priceSection ? `${sections}${priceSection}` : `<p class="filters-empty">Dodatni filteri će se pojaviti posle sledećeg osvežavanja kataloga.</p>`;
+  updateFilterCounter();
+}
+
+async function loadFacetFilters() {
+  if (!els.dynamicFilters) return;
+  const params = new URLSearchParams({ v: "48" });
+  if (state.category) params.set("category", state.category);
+  if (state.subCategory) params.set("subCategory", state.subCategory);
+  if (state.search) params.set("search", state.search);
+  try {
+    const response = await fetch(`${API_BASE}/catalog-filters?${params}`, { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (data.success) renderDynamicFilters(data);
+  } catch (error) {
+    els.dynamicFilters.innerHTML = `<p class="filters-empty">Filteri trenutno nisu dostupni.</p>`;
+    console.error("Filteri nisu učitani", error);
+  }
+}
+
+function appendAdvancedFilters(params) {
+  for (const [key, value] of Object.entries(state.filters)) {
+    if (Array.isArray(value)) value.forEach(item => params.append(key, item));
+    else if (value !== "") params.set(key, value);
+  }
+}
+
+function clearAdvancedFilters() {
+  Object.keys(state.filters).forEach(key => { state.filters[key] = ["minPrice", "maxPrice"].includes(key) ? "" : []; });
+}
+
+function applyFacetChange() {
+  state.status = "";
+  state.collectionLabel = "";
+  state.page = 1;
+  updateFilterCounter();
+  if (window.innerWidth <= 900) {
+    els.catalogFilters?.classList.remove("open");
+    els.mobileFiltersToggle?.setAttribute("aria-expanded", "false");
+  }
+  loadProducts();
+}
+
+function activeFilterSummary() {
+  const parts = [];
+  if (state.subCategory) parts.push(subCategoryLabel(state.subCategory));
+  else if (state.category) parts.push(categoryLabel(state.category));
+  if (state.collectionLabel) parts.push(state.collectionLabel);
+  for (const [key, values] of Object.entries(state.filters)) {
+    if (Array.isArray(values)) parts.push(...values.slice(0, 3));
+    else if (values) parts.push(`${key === "minPrice" ? "od" : "do"} ${values} €`);
+  }
+  return parts.join(" · ");
 }
 
 async function loadProducts() {
@@ -888,10 +1062,11 @@ async function loadProducts() {
   if (state.search) params.set("search", state.search);
   if (state.category) params.set("category", state.category);
   if (state.subCategory) params.set("subCategory", state.subCategory);
+  if (!state.status) appendAdvancedFilters(params);
 
   try {
     const endpoint = state.status
-      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=47`
+      ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=48`
       : `${API_BASE}/products-grouped?${params}`;
     const response = await fetch(endpoint, {
       headers: { Accept: "application/json" },
@@ -910,9 +1085,9 @@ async function loadProducts() {
     els.apiStatus.textContent = "Katalog ažuriran";
     if (!state.status) els.heroTotal.textContent = total.toLocaleString("sr-RS");
     els.totalMatches.textContent = matches.toLocaleString("sr-RS");
-    const filterName = state.collectionLabel || (state.subCategory ? subCategoryLabel(state.subCategory) : categoryLabel(state.category));
+    const filterName = activeFilterSummary();
     els.resultsLabel.textContent = state.status ? "proizvoda u kolekciji" : (state.search ? `rezultata za „${state.search}”` : "proizvoda");
-    els.activeFilter.classList.toggle("hidden", !(state.category || state.status));
+    els.activeFilter.classList.toggle("hidden", !(state.category || state.status || selectedFilterCount()));
     els.activeFilterName.textContent = filterName || "";
     els.pageInfo.textContent = state.status
       ? `${state.collectionLabel} · Strana ${state.page} od ${state.totalPages}`
@@ -924,6 +1099,8 @@ async function loadProducts() {
     els.pagination?.classList.toggle("hidden", state.totalPages <= 1);
 
     const products = Array.isArray(data.products) ? data.products : [];
+    renderCategoryFilterTree();
+    loadFacetFilters();
     if (!products.length) {
       els.message.textContent = "Nema proizvoda koji odgovaraju pretrazi.";
       return;
@@ -1050,12 +1227,57 @@ els.categoriesGrid?.addEventListener("click", event => {
   }
 });
 
+els.categoryFilterTree?.addEventListener("click", event => {
+  const button = event.target instanceof Element ? event.target.closest("button[data-side-category]") : null;
+  if (!button) return;
+  applyCategory(button.dataset.sideCategory || "", button.dataset.sideSubcategory || "");
+});
+
+els.dynamicFilters?.addEventListener("change", event => {
+  const input = event.target instanceof HTMLInputElement ? event.target : null;
+  const key = input?.dataset.filterKey;
+  if (!input || !key || !Array.isArray(state.filters[key])) return;
+  const values = new Set(state.filters[key]);
+  input.checked ? values.add(input.value) : values.delete(input.value);
+  state.filters[key] = [...values];
+  applyFacetChange();
+});
+
+els.dynamicFilters?.addEventListener("click", event => {
+  const button = event.target instanceof Element ? event.target.closest("[data-apply-price]") : null;
+  if (!button) return;
+  state.filters.minPrice = document.getElementById("filterMinPrice")?.value.trim() || "";
+  state.filters.maxPrice = document.getElementById("filterMaxPrice")?.value.trim() || "";
+  applyFacetChange();
+});
+
+els.clearAllFilters?.addEventListener("click", () => {
+  clearAdvancedFilters();
+  state.status = "";
+  state.category = "";
+  state.subCategory = "";
+  state.collectionLabel = "";
+  state.page = 1;
+  updateFilterCounter();
+  els.catalogFilters?.classList.remove("open");
+  els.mobileFiltersToggle?.setAttribute("aria-expanded", "false");
+  loadProducts();
+});
+
+els.mobileFiltersToggle?.addEventListener("click", () => {
+  const open = !els.catalogFilters?.classList.contains("open");
+  els.catalogFilters?.classList.toggle("open", open);
+  els.mobileFiltersToggle.setAttribute("aria-expanded", String(open));
+});
+
 els.clearCategory?.addEventListener("click", () => applyCategory("", ""));
 
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") {
     closeCategoriesMenu();
     closeNewMenu();
+    els.catalogFilters?.classList.remove("open");
+    els.mobileFiltersToggle?.setAttribute("aria-expanded", "false");
   }
 });
 document.addEventListener("click", event => {
