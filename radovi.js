@@ -58,26 +58,33 @@ grid.innerHTML = projects.map((project,index) => {
 
 const workCards = [...document.querySelectorAll("[data-work-card]")];
 
-filterButtons.forEach(button => {
-  button.addEventListener("click", () => {
-    const filter = button.dataset.workFilter || "all";
-    filterButtons.forEach(item => {
-      const active = item === button;
-      item.classList.toggle("active", active);
-      item.setAttribute("aria-pressed", String(active));
-    });
-    let visible = 0;
-    workCards.forEach(card => {
-      const categories = (card.dataset.categories || "").split(/\s+/);
-      const show = filter === "all" || categories.includes(filter);
-      card.classList.toggle("hidden", !show);
-      if (show) visible += 1;
-    });
-    if (workResultCount) workResultCount.textContent = visible ? `${visible} ${visible === 1 ? "projekat" : "projekata"}` : "Nova kategorija";
-    grid.classList.toggle("hidden", visible === 0);
-    workEmptyState?.classList.toggle("hidden", visible !== 0);
+function applyWorkFilter(filter = "all") {
+  const selectedButton = filterButtons.find(button => button.dataset.workFilter === filter)
+    || filterButtons.find(button => button.dataset.workFilter === "all");
+  const selectedFilter = selectedButton?.dataset.workFilter || "all";
+  filterButtons.forEach(button => {
+    const active = button === selectedButton;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
   });
+  let visible = 0;
+  workCards.forEach(card => {
+    const categories = (card.dataset.categories || "").split(/\s+/);
+    const show = selectedFilter === "all" || categories.includes(selectedFilter);
+    card.classList.toggle("hidden", !show);
+    if (show) visible += 1;
+  });
+  if (workResultCount) workResultCount.textContent = visible ? `${visible} ${visible === 1 ? "projekat" : "projekata"}` : "Nova kategorija";
+  grid.classList.toggle("hidden", visible === 0);
+  workEmptyState?.classList.toggle("hidden", visible !== 0);
+}
+
+filterButtons.forEach(button => {
+  button.addEventListener("click", () => applyWorkFilter(button.dataset.workFilter || "all"));
 });
+
+const requestedFilter = new URLSearchParams(window.location.search).get("category") || "all";
+applyWorkFilter(requestedFilter);
 
 grid.addEventListener("click", event => {
   const arrow = event.target.closest(".group-arrow");
