@@ -3,10 +3,10 @@ const projects = [
   {title:"Monografija škole",cat:"Knjige i monografije",key:"knjige",images:["093007","093008","093020"]},
   {title:"Crno-beli spomenar",cat:"Knjige i monografije",key:"knjige",images:["093048","093057"]},
   {title:"Drina plače i pamti",cat:"Knjige i monografije",key:"knjige",images:["093130","093139"]},
-  {title:"M1 poslovna publikacija",cat:"Fascikle",key:"fascikle",images:["093210","093228"]},
+  {title:"M1 fascikla",cat:"Fascikle",key:"fascikle",images:["093210","093228"]},
   {title:"Fortuna Foto",cat:"Fascikle",key:"fascikle",images:["093319","093332"]},
   {title:"MD Poliklinika",cat:"Fascikle",key:"fascikle",images:["093348","093355"]},
-  {title:"Mercator katalog",cat:"Fascikle",key:"fascikle",images:["093429","093436"]},
+  {title:"Medikom fascikla",cat:"Fascikle",key:"fascikle",images:["093429","093436"]},
   {title:"Zoom Optic",cat:"Fascikle",key:"fascikle",images:["093444","093452"]},
   {title:"Poslovni savetnik",cat:"Fascikle",key:"fascikle",images:["093501","093507"]},
   {title:"ABD-PROM katalog",cat:"Fascikle",key:"fascikle",images:["093542","093552","093605"]},
@@ -14,14 +14,12 @@ const projects = [
   {title:"MD Poliklinika letak",cat:"Flajeri i letci",key:"letci",images:["094017"]},
   {title:"Global Mont poslovna mapa",cat:"Fascikle",key:"fascikle",images:["094003"]},
   {title:"Monterra blok",cat:"Rokovnici i blokovi",key:"rokovnici",images:["094026","094056"]},
-  {title:"Christyns blok",cat:"Rokovnici i blokovi",key:"rokovnici",images:["094112","094121","094150"]},
+  {title:"Uniplast blok",cat:"Rokovnici i blokovi",key:"rokovnici",images:["094112"]},
   {title:"RoyalMedika blok",cat:"Rokovnici i blokovi",key:"rokovnici",images:["094129"]},
   {title:"Prodanović blok",cat:"Rokovnici i blokovi",key:"rokovnici",images:["094201"]},
   {title:"Toplane Srbije",cat:"Rokovnici i blokovi",key:"rokovnici",images:["094211","094215"]},
   {title:"Global Mont rokovnik",cat:"Rokovnici i blokovi",key:"rokovnici",images:["094223"]},
-  {title:"DPS Klas rokovnik",cat:"Rokovnici i blokovi",key:"rokovnici",images:["094229","094238"]},
-  {title:"DPS Klas poslovni rokovnik",cat:"Rokovnici i blokovi",key:"rokovnici",images:["094245","094251","094302"]},
-  {title:"DPS Klas spiralni rokovnik",cat:"Rokovnici i blokovi",key:"rokovnici",images:["094312","094317"]},
+  {title:"DPS Klas sveske",cat:"Rokovnici i blokovi",key:"rokovnici",images:["094229","094238","094245","094251","094302","094312","094317"]},
   {title:"Poslovni savetnik blok",cat:"Rokovnici i blokovi",key:"rokovnici",images:["094323","094328"]},
   {title:"Christyns Agri",cat:"Fascikle",key:"fascikle",images:["094347","094403"]},
   {title:"Đukić dvolisnica",cat:"Brošure i lifleti",key:"katalozi",images:["094414"]},
@@ -34,7 +32,7 @@ const projects = [
   {title:"Turistička brošura",cat:"Brošure i lifleti",key:"katalozi",images:["094913","094917"]}
 ];
 
-const rotations = {"094017":90,"094150":180};
+const rotations = {"093429":180,"094017":90};
 const grid = document.getElementById("portfolioGrid");
 const filterButtons = [...document.querySelectorAll("[data-work-filter]")];
 const workResultCount = document.getElementById("workResultCount");
