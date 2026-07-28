@@ -42,6 +42,13 @@ const modal = document.getElementById("workModal");
 const modalImage = document.getElementById("workModalImage");
 const modalTitle = document.getElementById("workModalTitle");
 const modalDescription = document.getElementById("workModalDescription");
+const modalZoom = modal?.querySelector(".work-modal-zoom");
+const modalPrev = modal?.querySelector(".work-modal-prev");
+const modalNext = modal?.querySelector(".work-modal-next");
+let modalProjectIndex = 0;
+let modalImageIndex = 0;
+let modalOpener = null;
+let modalTouchStart = 0;
 
 grid.innerHTML = projects.map((project,index) => {
   const count = project.images.length;
@@ -87,6 +94,39 @@ mobileFilter?.addEventListener("change", () => applyWorkFilter(mobileFilter.valu
 const requestedFilter = new URLSearchParams(window.location.search).get("category") || "all";
 applyWorkFilter(requestedFilter);
 
+function updateWorkModal() {
+  const project = projects[modalProjectIndex];
+  const id = project.images[modalImageIndex];
+  modalImage.src = `assets/radovi/demo-group/demo-group-${id}.webp`;
+  modalImage.alt = project.title;
+  modalImage.style.setProperty("--modal-rotation",`${rotations[id] || 0}deg`);
+  modalTitle.textContent = project.title;
+  modalDescription.textContent = `${project.cat} · Fotografija ${modalImageIndex + 1} od ${project.images.length}`;
+  const multiple = project.images.length > 1;
+  if (modalPrev) modalPrev.hidden = !multiple;
+  if (modalNext) modalNext.hidden = !multiple;
+  modal?.classList.remove("is-zoomed");
+  modalZoom?.setAttribute("aria-pressed","false");
+  if (modalZoom) modalZoom.textContent = "Uvećaj sliku ＋";
+}
+
+function openWorkModal(card) {
+  if (!modal || !modalImage || !modalTitle || !modalDescription) return;
+  modalOpener = card;
+  modalProjectIndex = Number(card.dataset.project);
+  modalImageIndex = Number(card.dataset.active);
+  updateWorkModal();
+  modal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  modal.querySelector(".work-modal-close")?.focus();
+}
+
+function moveWorkModal(direction) {
+  const project = projects[modalProjectIndex];
+  modalImageIndex = (modalImageIndex + direction + project.images.length) % project.images.length;
+  updateWorkModal();
+}
+
 grid.addEventListener("click", event => {
   const arrow = event.target.closest(".group-arrow");
   const card = event.target.closest("[data-work-card]");
@@ -105,23 +145,34 @@ grid.addEventListener("click", event => {
     card.querySelector(".group-count").textContent = `${active + 1} / ${project.images.length}`;
     return;
   }
-  if (!modal || !modalImage || !modalTitle || !modalDescription) return;
-  const active = Number(card.dataset.active);
-  const id = project.images[active];
-  modalImage.src = `assets/radovi/demo-group/demo-group-${id}.webp`;
-  modalImage.alt = project.title;
-  modalTitle.textContent = project.title;
-  modalDescription.textContent = `${project.cat} · Fotografija ${active + 1} od ${project.images.length}`;
-  modal.classList.remove("hidden");
-  document.body.style.overflow = "hidden";
-  modal.querySelector(".work-modal-close")?.focus();
+  openWorkModal(card);
 });
 
 function closeWorkModal() {
   modal?.classList.add("hidden");
+  modal?.classList.remove("is-zoomed");
   document.body.style.overflow = "";
+  modalOpener?.focus();
 }
 
 modal?.querySelector(".work-modal-close")?.addEventListener("click", closeWorkModal);
 modal?.addEventListener("click", event => { if (event.target === modal) closeWorkModal(); });
-document.addEventListener("keydown", event => { if (event.key === "Escape") closeWorkModal(); });
+modalPrev?.addEventListener("click", () => moveWorkModal(-1));
+modalNext?.addEventListener("click", () => moveWorkModal(1));
+modalZoom?.addEventListener("click", () => {
+  const zoomed = modal.classList.toggle("is-zoomed");
+  modalZoom.setAttribute("aria-pressed",String(zoomed));
+  modalZoom.textContent = zoomed ? "Vrati prikaz −" : "Uvećaj sliku ＋";
+});
+modalImage?.addEventListener("dblclick", () => modalZoom?.click());
+modal?.addEventListener("touchstart", event => { modalTouchStart = event.changedTouches[0].clientX; }, {passive:true});
+modal?.addEventListener("touchend", event => {
+  const distance = event.changedTouches[0].clientX - modalTouchStart;
+  if (Math.abs(distance) > 55 && !modal.classList.contains("is-zoomed")) moveWorkModal(distance < 0 ? 1 : -1);
+}, {passive:true});
+document.addEventListener("keydown", event => {
+  if (modal?.classList.contains("hidden")) return;
+  if (event.key === "Escape") closeWorkModal();
+  else if (event.key === "ArrowLeft") moveWorkModal(-1);
+  else if (event.key === "ArrowRight") moveWorkModal(1);
+});

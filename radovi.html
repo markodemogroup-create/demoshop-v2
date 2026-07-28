@@ -6,10 +6,10 @@
   <meta name="description" content="Izbor realizovanih projekata štampe, poslovnog materijala, letaka, časopisa i kalendara.">
   <title>Naši radovi — DemoShop</title>
   <link rel="icon" type="image/png" href="assets/brand/favicon.png">
-  <link rel="stylesheet" href="style.css?v=65">
-  <link rel="stylesheet" href="radovi.css?v=8">
+  <link rel="stylesheet" href="style.css?v=66">
+  <link rel="stylesheet" href="radovi.css?v=9">
 </head>
-<body data-demoshop-build="65">
+<body data-demoshop-build="66">
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="index.html" aria-label="DemoShop početna"><img class="brand-logo" src="assets/brand/demoshop-logo.png" alt="DemoShop"></a>
@@ -19,7 +19,7 @@
         <button type="submit" aria-label="Pretraži katalog">⌕</button>
         <div class="search-suggestions hidden" role="listbox" aria-label="Predlozi proizvoda" data-header-search-suggestions></div>
       </form>
-      <div class="header-actions"><a class="back-link" href="index.html">← Katalog proizvoda</a><a class="cart-link" href="cart.html">Upit <span class="cart-count" data-cart-count>0</span></a></div>
+      <div class="header-actions"><a class="back-link" href="index.html">← Katalog proizvoda</a><a class="group-site-header-link" href="https://demo-group.pages.dev/">Demo Group ↗</a><a class="cart-link" href="cart.html">Upit <span class="cart-count" data-cart-count>0</span></a></div>
     </div>
   </header>
 
@@ -128,7 +128,12 @@
 
   <div id="workModal" class="work-modal hidden" role="dialog" aria-modal="true" aria-labelledby="workModalTitle">
     <button class="work-modal-close" type="button" aria-label="Zatvori pregled">×</button>
-    <div class="work-modal-panel"><img id="workModalImage" alt=""><div><p class="eyebrow">REALIZOVANI PROJEKAT</p><h2 id="workModalTitle"></h2><p id="workModalDescription"></p></div></div>
+    <button class="work-modal-nav work-modal-prev" type="button" aria-label="Prethodna fotografija">←</button>
+    <div class="work-modal-panel">
+      <div class="work-modal-stage"><img id="workModalImage" alt=""></div>
+      <div class="work-modal-copy"><p class="eyebrow">REALIZOVANI PROJEKAT</p><h2 id="workModalTitle"></h2><p id="workModalDescription"></p><button class="work-modal-zoom" type="button" aria-pressed="false">Uvećaj sliku ＋</button></div>
+    </div>
+    <button class="work-modal-nav work-modal-next" type="button" aria-label="Sledeća fotografija">→</button>
   </div>
 
   <footer class="site-footer">
@@ -146,6 +151,6 @@
   </footer>
   <script src="cart-store.js?v=59"></script>
   <script src="header-search.js?v=59"></script>
-  <script src="radovi.js?v=8"></script>
+  <script src="radovi.js?v=9"></script>
 </body>
 </html>
