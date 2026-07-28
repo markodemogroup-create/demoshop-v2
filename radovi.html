@@ -6,10 +6,10 @@
   <meta name="description" content="Izbor realizovanih projekata štampe, poslovnog materijala, letaka, časopisa i kalendara.">
   <title>Naši radovi — DemoShop</title>
   <link rel="icon" type="image/png" href="assets/brand/favicon.png">
-  <link rel="stylesheet" href="style.css?v=59">
-  <link rel="stylesheet" href="radovi.css?v=4">
+  <link rel="stylesheet" href="style.css?v=65">
+  <link rel="stylesheet" href="radovi.css?v=8">
 </head>
-<body data-demoshop-build="57">
+<body data-demoshop-build="65">
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="index.html" aria-label="DemoShop početna"><img class="brand-logo" src="assets/brand/demoshop-logo.png" alt="DemoShop"></a>
@@ -32,8 +32,8 @@
           <p>Od prvog nacrta do gotovog proizvoda — knjige, brošure, rokovnici, fascikle, časopisi i ambalaža.</p>
         </div>
         <div class="portfolio-summary" aria-label="Pregled realizacija">
-          <span><strong>33</strong> grupisana projekta</span>
-          <span><strong>67</strong> fotografija radova</span>
+          <span><strong>31</strong> grupisan projekat</span>
+          <span><strong>65</strong> fotografija radova</span>
         </div>
       </div>
     </section>
@@ -58,8 +58,25 @@
         <button type="button" data-work-filter="promo" aria-pressed="false">Promo proizvodi</button>
         <button type="button" data-work-filter="pokloni" aria-pressed="false">Poslovni pokloni</button>
       </div>
+      <label class="portfolio-mobile-filter" for="portfolioMobileFilter">
+        <span>Izaberite kategoriju radova</span>
+        <select id="portfolioMobileFilter">
+          <option value="all">Svi radovi</option>
+          <option value="knjige">Knjige i monografije</option>
+          <option value="katalozi">Brošure i lifleti</option>
+          <option value="fascikle">Fascikle</option>
+          <option value="letci">Flajeri i letci</option>
+          <option value="rokovnici">Rokovnici i blokovi</option>
+          <option value="casopisi">Časopisi</option>
+          <option value="ambalaza">Ambalaža i kutije</option>
+          <option value="tekstil">Majice i tekstil</option>
+          <option value="gravura">Laserska gravura</option>
+          <option value="promo">Promo proizvodi</option>
+          <option value="pokloni">Poslovni pokloni</option>
+        </select>
+      </label>
 
-      <div class="portfolio-filter-status"><strong id="workResultCount">33 projekta</strong><span>Odaberite kategoriju za uži pregled.</span></div>
+      <div class="portfolio-filter-status"><strong id="workResultCount">31 projekat</strong><span>Odaberite kategoriju za uži pregled.</span></div>
 
       <div id="portfolioGrid" class="portfolio-grid">
         <button class="work-card work-card-wide" type="button" data-work-card data-categories="letci katalozi" data-image="assets/radovi/trolist-modern.webp" data-title="Trodelni promotivni letak" data-description="Dizajn i priprema trodelnog letka za sportski događaj.">
@@ -129,6 +146,6 @@
   </footer>
   <script src="cart-store.js?v=59"></script>
   <script src="header-search.js?v=59"></script>
-  <script src="radovi.js?v=7"></script>
+  <script src="radovi.js?v=8"></script>
 </body>
 </html>

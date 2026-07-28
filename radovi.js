@@ -35,6 +35,7 @@ const projects = [
 const rotations = {"093429":180,"094017":90};
 const grid = document.getElementById("portfolioGrid");
 const filterButtons = [...document.querySelectorAll("[data-work-filter]")];
+const mobileFilter = document.getElementById("portfolioMobileFilter");
 const workResultCount = document.getElementById("workResultCount");
 const workEmptyState = document.getElementById("workEmptyState");
 const modal = document.getElementById("workModal");
@@ -65,6 +66,7 @@ function applyWorkFilter(filter = "all") {
     button.classList.toggle("active", active);
     button.setAttribute("aria-pressed", String(active));
   });
+  if (mobileFilter) mobileFilter.value = selectedFilter;
   let visible = 0;
   workCards.forEach(card => {
     const categories = (card.dataset.categories || "").split(/\s+/);
@@ -80,6 +82,7 @@ function applyWorkFilter(filter = "all") {
 filterButtons.forEach(button => {
   button.addEventListener("click", () => applyWorkFilter(button.dataset.workFilter || "all"));
 });
+mobileFilter?.addEventListener("change", () => applyWorkFilter(mobileFilter.value || "all"));
 
 const requestedFilter = new URLSearchParams(window.location.search).get("category") || "all";
 applyWorkFilter(requestedFilter);

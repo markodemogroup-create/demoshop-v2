@@ -81,7 +81,7 @@ let heroRotationTimer;
 let newProductsCarousel;
 let promoStoriesCarousel;
 let menuCategories = [];
-const menuSelection = { categoryCode: "", subCategoryCode: "" };
+const menuSelection = { categoryCode: "", subCategoryCode: "", mobileStep: 1 };
 
 const initialUrlParams = new URLSearchParams(window.location.search);
 state.search = initialUrlParams.get("search") || "";
@@ -973,9 +973,15 @@ function renderCategoriesMenu() {
 
   menuSelection.categoryCode = activeCategory.code;
   menuSelection.subCategoryCode = activeSubCategory?.code || "";
+  const mobileStep = Math.min(3, Math.max(1, Number(menuSelection.mobileStep) || 1));
 
   els.categoriesGrid.innerHTML = `
-    <div class="category-browser">
+    <div class="category-browser" data-mobile-step="${mobileStep}">
+      <div class="category-mobile-toolbar">
+        <button type="button" class="category-mobile-back" data-menu-back ${mobileStep === 1 ? "disabled" : ""} aria-label="Prethodni korak">← <span>Nazad</span></button>
+        <div><small>KATEGORIJE</small><strong>Korak ${mobileStep} od 3</strong></div>
+        <button type="button" class="category-mobile-close" data-menu-close aria-label="Zatvori kategorije">×</button>
+      </div>
       <section class="category-level category-level-primary" aria-label="Kategorije">
         <div class="category-level-heading">
           <div><span>Korak 1</span><strong>Kategorije</strong></div>
@@ -1357,6 +1363,7 @@ els.categoriesToggle?.addEventListener("click", () => {
   if (willOpen && menuCategories.length) {
     menuSelection.categoryCode = state.category;
     menuSelection.subCategoryCode = state.subCategory;
+    menuSelection.mobileStep = 1;
     renderCategoriesMenu();
   }
   els.categoriesMenu.classList.toggle("hidden", !willOpen);
@@ -1398,14 +1405,31 @@ els.categoriesGrid?.addEventListener("click", event => {
   if (categoryStep) {
     menuSelection.categoryCode = categoryStep.dataset.menuCategory || "";
     menuSelection.subCategoryCode = "";
+    if (window.matchMedia("(max-width:700px)").matches) menuSelection.mobileStep = 2;
     renderCategoriesMenu();
+    els.categoriesMenu.scrollTop = 0;
     return;
   }
 
   const subCategoryStep = target.closest("button[data-menu-subcategory]");
   if (subCategoryStep) {
     menuSelection.subCategoryCode = subCategoryStep.dataset.menuSubcategory || "";
+    if (window.matchMedia("(max-width:700px)").matches) menuSelection.mobileStep = 3;
     renderCategoriesMenu();
+    els.categoriesMenu.scrollTop = 0;
+    return;
+  }
+
+  if (target.closest("[data-menu-back]")) {
+    menuSelection.mobileStep = Math.max(1, (Number(menuSelection.mobileStep) || 1) - 1);
+    renderCategoriesMenu();
+    els.categoriesMenu.scrollTop = 0;
+    return;
+  }
+
+  if (target.closest("[data-menu-close]")) {
+    closeCategoriesMenu();
+    els.categoriesToggle.focus();
     return;
   }
 
