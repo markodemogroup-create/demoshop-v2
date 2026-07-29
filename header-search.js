@@ -14,38 +14,6 @@
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
   })[character]);
 
-  function normalizeCatalogCode(value) {
-    return String(value || "").toLocaleLowerCase("sr-Latn").replace(/[^a-z0-9]/g, "");
-  }
-
-  function searchQueryForApi(value) {
-    const query = String(value || "").trim();
-    const compact = normalizeCatalogCode(query);
-    if (!/^\d+$/.test(compact) || compact.length <= 2) return query;
-
-    const groups = [compact.slice(0, 2), compact.slice(2, 5)];
-    if (compact.length > 5) groups.push(compact.slice(5));
-    return groups.filter(Boolean).join(".");
-  }
-
-  function productCodeSearchRank(product, query) {
-    const needle = normalizeCatalogCode(query);
-    const codes = [product?.modelCode, product?.representativeCode]
-      .map(normalizeCatalogCode)
-      .filter(Boolean);
-    if (codes.some(code => code === needle)) return 0;
-    if (codes.some(code => code.startsWith(needle))) return 1;
-    if (codes.some(code => code.includes(needle))) return 2;
-    return 3;
-  }
-
-  function sortProductsForSearch(products, query) {
-    return products
-      .map((product, index) => ({ product, index, rank: productCodeSearchRank(product, query) }))
-      .sort((a, b) => a.rank - b.rank || a.index - b.index)
-      .map(item => item.product);
-  }
-
   function closeSuggestions() {
     suggestions.classList.add("hidden");
     suggestions.innerHTML = "";
@@ -128,12 +96,15 @@
     const currentRequest = ++requestId;
 
     try {
-      const params = new URLSearchParams({ search: searchQueryForApi(query), page: "1", limit: "6" });
-      const response = await fetch(`${API_BASE}/products-grouped?${params}`, { headers: { Accept: "application/json" } });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
+      const params = new URLSearchParams({ search: query, page: "1", limit: "6" });
+      const data = window.DemoShopSearch
+        ? await window.DemoShopSearch.fetchGroupedProducts(API_BASE, params, { headers: { Accept: "application/json" } })
+        : await fetch(`${API_BASE}/products-grouped?${params}`, { headers: { Accept: "application/json" } }).then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+          });
       if (currentRequest !== requestId) return;
-      const products = sortProductsForSearch(Array.isArray(data.products) ? data.products : [], query);
+      const products = Array.isArray(data.products) ? data.products : [];
 
       suggestions.innerHTML = products.length
         ? products.map((product, index) => {
