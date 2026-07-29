@@ -14,8 +14,16 @@
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
   })[character]);
 
+  function foldSerbianSearchText(value) {
+    return String(value || "")
+      .toLocaleLowerCase("sr-Latn")
+      .replace(/đ/g, "dj")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
   function normalizeCatalogCode(value) {
-    return String(value || "").toLocaleLowerCase("sr-Latn").replace(/[^a-z0-9]/g, "");
+    return foldSerbianSearchText(value).replace(/[^a-z0-9]/g, "");
   }
 
   function searchQueryForApi(value) {
@@ -26,6 +34,63 @@
     const groups = [compact.slice(0, 2), compact.slice(2, 5)];
     if (compact.length > 5) groups.push(compact.slice(5));
     return groups.filter(Boolean).join(".");
+  }
+
+  function searchQueriesForApi(value) {
+    const query = String(value || "").trim();
+    if (!query) return [""];
+
+    const compact = normalizeCatalogCode(query);
+    if (/^\d+$/.test(compact)) {
+      return [...new Set([searchQueryForApi(compact), compact, query])];
+    }
+
+    const ascii = foldSerbianSearchText(query);
+    let variants = [""];
+
+    for (let index = 0; index < ascii.length;) {
+      let choices;
+      let step = 1;
+      if (ascii.slice(index, index + 2) === "dj") {
+        choices = ["dj", "đ"];
+        step = 2;
+      } else {
+        const character = ascii[index];
+        choices = character === "s"
+          ? ["s", "š"]
+          : character === "c"
+            ? ["c", "č", "ć"]
+            : character === "z"
+              ? ["z", "ž"]
+              : [character];
+      }
+
+      variants = variants
+        .flatMap(prefix => choices.map(choice => `${prefix}${choice}`))
+        .slice(0, 32);
+      index += step;
+    }
+
+    return [...new Set([query, ...variants])].slice(0, 32);
+  }
+
+  async function fetchGroupedSearchResult(rawQuery) {
+    let fallback = null;
+
+    for (const resolvedQuery of searchQueriesForApi(rawQuery)) {
+      const params = new URLSearchParams({ search: resolvedQuery, page: "1", limit: "6" });
+      const response = await fetch(`${API_BASE}/products-grouped?${params}`, {
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || "Katalog trenutno nije dostupan.");
+      if (!fallback) fallback = data;
+      if (Array.isArray(data.products) && data.products.length) return data;
+    }
+
+    return fallback;
   }
 
   function productCodeSearchRank(product, query) {
@@ -128,10 +193,7 @@
     const currentRequest = ++requestId;
 
     try {
-      const params = new URLSearchParams({ search: searchQueryForApi(query), page: "1", limit: "6" });
-      const response = await fetch(`${API_BASE}/products-grouped?${params}`, { headers: { Accept: "application/json" } });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
+      const data = await fetchGroupedSearchResult(query);
       if (currentRequest !== requestId) return;
       const products = sortProductsForSearch(Array.isArray(data.products) ? data.products : [], query);
 

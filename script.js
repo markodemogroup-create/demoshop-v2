@@ -74,6 +74,7 @@ const state = {
   requestId: 0,
   suggestionRequestId: 0,
   suggestionIndex: -1,
+  resolvedSearch: "",
 };
 
 const variantDetailCache = new Map();
@@ -131,8 +132,16 @@ function escapeHtml(value) {
   })[character]);
 }
 
+function foldSerbianSearchText(value) {
+  return String(value || "")
+    .toLocaleLowerCase("sr-Latn")
+    .replace(/đ/g, "dj")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function normalizeCatalogCode(value) {
-  return String(value || "").toLocaleLowerCase("sr-Latn").replace(/[^a-z0-9]/g, "");
+  return foldSerbianSearchText(value).replace(/[^a-z0-9]/g, "");
 }
 
 function formatNumericCatalogCode(value) {
@@ -149,6 +158,69 @@ function searchQueryForApi(value) {
   const query = String(value || "").trim();
   const compact = normalizeCatalogCode(query);
   return /^\d+$/.test(compact) ? formatNumericCatalogCode(compact) : query;
+}
+
+function searchQueriesForApi(value) {
+  const query = String(value || "").trim();
+  if (!query) return [""];
+
+  const compact = normalizeCatalogCode(query);
+  if (/^\d+$/.test(compact)) {
+    return [...new Set([formatNumericCatalogCode(compact), compact, query])];
+  }
+
+  const ascii = foldSerbianSearchText(query);
+  let variants = [""];
+
+  for (let index = 0; index < ascii.length;) {
+    let choices;
+    let step = 1;
+    if (ascii.slice(index, index + 2) === "dj") {
+      choices = ["dj", "đ"];
+      step = 2;
+    } else {
+      const character = ascii[index];
+      choices = character === "s"
+        ? ["s", "š"]
+        : character === "c"
+          ? ["c", "č", "ć"]
+          : character === "z"
+            ? ["z", "ž"]
+            : [character];
+    }
+
+    variants = variants
+      .flatMap(prefix => choices.map(choice => `${prefix}${choice}`))
+      .slice(0, 32);
+    index += step;
+  }
+
+  return [...new Set([query, ...variants])].slice(0, 32);
+}
+
+async function fetchGroupedSearchResult(baseParams, rawQuery, fetchOptions = {}) {
+  let fallback = null;
+
+  for (const resolvedQuery of searchQueriesForApi(rawQuery)) {
+    const params = new URLSearchParams(baseParams);
+    if (resolvedQuery) params.set("search", resolvedQuery);
+    else params.delete("search");
+
+    const response = await fetch(`${API_BASE}/products-grouped?${params}`, {
+      headers: { Accept: "application/json" },
+      ...fetchOptions,
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || "Katalog trenutno nije dostupan.");
+
+    const result = { data, resolvedQuery };
+    if (!fallback) fallback = result;
+    if (!rawQuery || (Array.isArray(data.products) && data.products.length)) return result;
+  }
+
+  return fallback;
 }
 
 function productCodeSearchRank(product, query) {
@@ -242,10 +314,11 @@ async function loadSearchSuggestions() {
   if (query.length < 2) return hideSearchSuggestions();
 
   try {
-    const searchParams = new URLSearchParams({ search: searchQueryForApi(query), page: "1", limit: "6" });
-    const response = await fetch(`${API_BASE}/products-grouped?${searchParams}`, { headers: { Accept: "application/json" } });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
+    const result = await fetchGroupedSearchResult(
+      new URLSearchParams({ page: "1", limit: "6" }),
+      query
+    );
+    const data = result.data;
     if (requestId !== state.suggestionRequestId) return;
     const products = sortProductsForSearch(Array.isArray(data.products) ? data.products : [], query);
     if (!products.length) {
@@ -1224,7 +1297,7 @@ async function loadFacetFilters() {
   const params = new URLSearchParams({ v: "48" });
   if (state.category) params.set("category", state.category);
   if (state.subCategory) params.set("subCategory", state.subCategory);
-  if (state.search) params.set("search", searchQueryForApi(state.search));
+  if (state.search) params.set("search", state.resolvedSearch || searchQueryForApi(state.search));
   try {
     const response = await fetch(`${API_BASE}/catalog-filters?${params}`, { headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1315,7 +1388,6 @@ async function loadProducts() {
   els.grid.innerHTML = "";
 
   const params = new URLSearchParams({ page: String(state.page), limit: String(state.status ? 32 : PAGE_LIMIT) });
-  if (state.search) params.set("search", searchQueryForApi(state.search));
   if (state.category) params.set("category", state.category);
   if (state.subCategory) params.set("subCategory", state.subCategory);
   if (!state.status) appendAdvancedFilters(params);
@@ -1323,18 +1395,24 @@ async function loadProducts() {
   try {
     let data;
     if (state.collection) {
+      state.resolvedSearch = "";
       data = await fetchCustomCollection(state.collection);
-    } else {
-      const endpoint = state.status
-        ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=49`
-        : `${API_BASE}/products-grouped?${params}`;
-      const response = await fetch(endpoint, {
-        headers: { Accept: "application/json" },
-        cache: state.status ? "no-store" : "default",
-      });
+    } else if (state.status) {
+      state.resolvedSearch = "";
+      const response = await fetch(
+        `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=49`,
+        {
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+        }
+      );
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       data = await response.json();
       if (!data.success) throw new Error(data.error || "Katalog trenutno nije dostupan.");
+    } else {
+      const result = await fetchGroupedSearchResult(params, state.search);
+      data = result.data;
+      state.resolvedSearch = result.resolvedQuery;
     }
     if (requestId !== state.requestId) return;
 
