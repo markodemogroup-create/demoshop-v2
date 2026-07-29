@@ -1,14 +1,16 @@
-# DemoShop V67
+# DemoShop V68
 
 Paket za postojeći GitHub repozitorijum `demoshop-v2`.
 
-V67 dodatno donosi:
+V68 dodatno donosi:
 
-- katalog proizvoda odmah ispod glavnog banera;
-- prelazak na sledeću ili prethodnu stranu bez vraćanja na vrh sajta;
-- kompaktniju sekciju „Noviteti“ na računaru i uklanjanje te sekcije na telefonu;
-- novu Instagram galeriju sa realizovanim radovima i vezom ka `@demogroup.rs`;
-- zadržan trostepeni izbor kategorija i sve funkcije prethodne verzije;
-- prilagođen raspored za telefone, tablete i računare.
+- pretragu šifara sa tačkama, razmacima ili crticama i bez njih;
+- delimičnu pretragu šifre uz prikaz svih pronađenih proizvoda;
+- prednost tačnog podudaranja šifre u rezultatima;
+- automatsku smenu velikog početnog banera na četiri sekunde;
+- pauziranje banera pri prelasku mišem, radu tastaturom i ručnom izboru;
+- zadržano ručno listanje, tačke za izbor i prevlačenje prstom;
+- poštovanje podešavanja uređaja „smanji animacije”;
+- sve funkcije i prilagođavanja iz prethodnih verzija.
 
 Postavite kompletan sadržaj paketa u koren repozitorijuma `demoshop-v2`.

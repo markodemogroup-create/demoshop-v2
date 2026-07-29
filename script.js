@@ -1,6 +1,8 @@
 const API_BASE = "https://demo-group-api.marko-demogroup.workers.dev";
 const PAGE_LIMIT = 20;
 const DETAIL_CONCURRENCY = 4;
+const HERO_ROTATION_MS = 4000;
+const HERO_MANUAL_PAUSE_MS = 6500;
 
 const CUSTOM_COLLECTIONS = {
   "swiss-pens": { label: "Swiss Made olovke", terms: ["10.222", "10.220", "10.218", "10.217"] },
@@ -78,6 +80,7 @@ const variantDetailCache = new Map();
 const groupAvailabilityCache = new Map();
 let heroSlideIndex = 0;
 let heroRotationTimer;
+let heroRotationResumeTimer;
 let newProductsCarousel;
 let promoStoriesCarousel;
 let menuCategories = [];
@@ -128,6 +131,48 @@ function escapeHtml(value) {
   })[character]);
 }
 
+function normalizeCatalogCode(value) {
+  return String(value || "").toLocaleLowerCase("sr-Latn").replace(/[^a-z0-9]/g, "");
+}
+
+function formatNumericCatalogCode(value) {
+  const compact = normalizeCatalogCode(value);
+  if (!/^\d+$/.test(compact) || compact.length <= 2) return String(value || "").trim();
+
+  const groups = [compact.slice(0, 2)];
+  if (compact.length > 2) groups.push(compact.slice(2, 5));
+  if (compact.length > 5) groups.push(compact.slice(5));
+  return groups.filter(Boolean).join(".");
+}
+
+function searchQueryForApi(value) {
+  const query = String(value || "").trim();
+  const compact = normalizeCatalogCode(query);
+  return /^\d+$/.test(compact) ? formatNumericCatalogCode(compact) : query;
+}
+
+function productCodeSearchRank(product, query) {
+  const needle = normalizeCatalogCode(query);
+  if (!needle) return 3;
+
+  const codes = [product?.modelCode, product?.representativeCode]
+    .map(normalizeCatalogCode)
+    .filter(Boolean);
+
+  if (codes.some(code => code === needle)) return 0;
+  if (codes.some(code => code.startsWith(needle))) return 1;
+  if (codes.some(code => code.includes(needle))) return 2;
+  return 3;
+}
+
+function sortProductsForSearch(products, query) {
+  if (!query) return products;
+  return products
+    .map((product, index) => ({ product, index, rank: productCodeSearchRank(product, query) }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .map(item => item.product);
+}
+
 const DISPLAY_COLOR_WORDS = /^(crn|crna|crni|crno|crne|bel|bela|beli|belo|bele|bijel|bijela|plav|plava|plavi|plavo|crven|crvena|crveni|crveno|zelen|zelena|zeleni|zeleno|žut|žuta|žuti|žuto|zut|zuta|zuti|zuto|siv|siva|sivi|sivo|roze|roza|pink|narandžast|narandžasta|narandzast|narandzasta|ljubičast|ljubičasta|ljubicast|ljubicasta|braon|teget|bež|bez|bordo|tirkiz|tirkizna|ciklama|lila|srebrn|srebrna|zlatn|zlatna|transparentan|transparentna)$/i;
 
 function productDisplayName(value) {
@@ -166,7 +211,13 @@ function highlightSearchMatch(value, query) {
   const needle = String(query || "").trim();
   if (!needle) return escapeHtml(text);
   const index = text.toLocaleLowerCase("sr-Latn").indexOf(needle.toLocaleLowerCase("sr-Latn"));
-  if (index < 0) return escapeHtml(text);
+  if (index < 0) {
+    const normalizedText = normalizeCatalogCode(text);
+    const normalizedNeedle = normalizeCatalogCode(needle);
+    return normalizedNeedle && normalizedText.includes(normalizedNeedle)
+      ? `<mark>${escapeHtml(text)}</mark>`
+      : escapeHtml(text);
+  }
   return `${escapeHtml(text.slice(0, index))}<mark>${escapeHtml(text.slice(index, index + needle.length))}</mark>${escapeHtml(text.slice(index + needle.length))}`;
 }
 
@@ -191,12 +242,12 @@ async function loadSearchSuggestions() {
   if (query.length < 2) return hideSearchSuggestions();
 
   try {
-    const searchParams = new URLSearchParams({ search: query, page: "1", limit: "6" });
+    const searchParams = new URLSearchParams({ search: searchQueryForApi(query), page: "1", limit: "6" });
     const response = await fetch(`${API_BASE}/products-grouped?${searchParams}`, { headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (requestId !== state.suggestionRequestId) return;
-    const products = Array.isArray(data.products) ? data.products : [];
+    const products = sortProductsForSearch(Array.isArray(data.products) ? data.products : [], query);
     if (!products.length) {
       els.searchSuggestions.innerHTML = `<div class="search-suggestion-empty">Nema pronađenih proizvoda.</div>`;
     } else {
@@ -679,19 +730,28 @@ function activateHeroSlide(index, restartRotation = true) {
     dot.setAttribute("aria-current", dotIndex === heroSlideIndex ? "true" : "false");
   });
 
-  if (restartRotation) startHeroRotation();
+  if (restartRotation) resumeHeroRotationAfterInteraction();
 }
 
 function stopHeroRotation() {
   window.clearInterval(heroRotationTimer);
+  window.clearTimeout(heroRotationResumeTimer);
   heroRotationTimer = undefined;
+  heroRotationResumeTimer = undefined;
 }
 
 function startHeroRotation() {
   stopHeroRotation();
   const slideCount = els.heroShowcase?.querySelectorAll("[data-hero-slide]").length || 0;
   if (slideCount < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  heroRotationTimer = window.setInterval(() => activateHeroSlide(heroSlideIndex + 1, false), 5800);
+  heroRotationTimer = window.setInterval(() => activateHeroSlide(heroSlideIndex + 1, false), HERO_ROTATION_MS);
+}
+
+function resumeHeroRotationAfterInteraction() {
+  stopHeroRotation();
+  const slideCount = els.heroShowcase?.querySelectorAll("[data-hero-slide]").length || 0;
+  if (slideCount < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  heroRotationResumeTimer = window.setTimeout(startHeroRotation, HERO_MANUAL_PAUSE_MS);
 }
 
 function initializePromoBanner() {
@@ -722,7 +782,9 @@ function initializePromoBanner() {
   els.heroShowcase.addEventListener("pointerenter", stopHeroRotation);
   els.heroShowcase.addEventListener("pointerleave", startHeroRotation);
   els.heroShowcase.addEventListener("focusin", stopHeroRotation);
-  els.heroShowcase.addEventListener("focusout", startHeroRotation);
+  els.heroShowcase.addEventListener("focusout", event => {
+    if (!els.heroShowcase.contains(event.relatedTarget)) startHeroRotation();
+  });
   let heroTouchX = null;
   els.heroShowcase.addEventListener("touchstart", event => { heroTouchX = event.touches[0]?.clientX ?? null; }, { passive: true });
   els.heroShowcase.addEventListener("touchend", event => {
@@ -731,6 +793,10 @@ function initializePromoBanner() {
     heroTouchX = null;
     if (Math.abs(distance) > 45) activateHeroSlide(heroSlideIndex + (distance < 0 ? 1 : -1));
   }, { passive: true });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopHeroRotation();
+    else startHeroRotation();
+  });
 
   activateHeroSlide(0, false);
   startHeroRotation();
@@ -1158,7 +1224,7 @@ async function loadFacetFilters() {
   const params = new URLSearchParams({ v: "48" });
   if (state.category) params.set("category", state.category);
   if (state.subCategory) params.set("subCategory", state.subCategory);
-  if (state.search) params.set("search", state.search);
+  if (state.search) params.set("search", searchQueryForApi(state.search));
   try {
     const response = await fetch(`${API_BASE}/catalog-filters?${params}`, { headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1249,7 +1315,7 @@ async function loadProducts() {
   els.grid.innerHTML = "";
 
   const params = new URLSearchParams({ page: String(state.page), limit: String(state.status ? 32 : PAGE_LIMIT) });
-  if (state.search) params.set("search", state.search);
+  if (state.search) params.set("search", searchQueryForApi(state.search));
   if (state.category) params.set("category", state.category);
   if (state.subCategory) params.set("subCategory", state.subCategory);
   if (!state.status) appendAdvancedFilters(params);
@@ -1293,7 +1359,7 @@ async function loadProducts() {
     els.clearSearch.classList.toggle("hidden", !(state.search || state.collection));
     els.pagination?.classList.toggle("hidden", state.totalPages <= 1);
 
-    const products = Array.isArray(data.products) ? data.products : [];
+    const products = sortProductsForSearch(Array.isArray(data.products) ? data.products : [], state.search);
     renderCategoryFilterTree();
     loadFacetFilters();
     if (!products.length) {
