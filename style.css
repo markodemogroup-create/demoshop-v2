@@ -339,3 +339,51 @@ body{background:#fbfdfc}
 .footer-logo-clean b{font-weight:800}
 @media(max-width:1150px) and (min-width:701px){.cart-item{grid-template-columns:90px minmax(0,1fr) 118px 120px 28px}}
 @media(max-width:700px){.header-search .search-suggestion-image{width:58px;height:52px;flex-basis:58px}.cart-item{grid-template-columns:72px minmax(0,1fr) 28px}.cart-quantity-stepper{width:116px}.footer-logo-clean img{width:54px!important;height:54px!important}.footer-logo-clean span{font-size:24px}}
+
+/* DemoShop V67: katalog ranije, kompaktniji noviteti i Instagram galerija */
+main{display:flex;flex-direction:column}
+main>.promo-banner-section{order:1}
+main>#catalogStart{order:2}
+main>.home-promo-stories{order:3}
+main>.home-highlights{order:4}
+main>.home-new-products{order:5}
+main>.instagram-showcase{order:6}
+
+#catalogStart{padding-top:30px;padding-bottom:48px;scroll-margin-top:132px}
+.catalog-results{scroll-margin-top:132px}
+.home-promo-stories{padding-top:58px}
+.home-new-products{padding:44px 0 52px;background:#f7f9f9}
+.home-new-products .container{width:min(1220px,calc(100% - 36px))}
+.new-products-heading h2{font-size:clamp(30px,2.7vw,40px)}
+.new-products-track .product-card{flex-basis:calc((100% - 64px)/5)}
+
+.instagram-showcase{padding:64px 0 68px;background:#fff}
+.instagram-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:28px;margin-bottom:25px}
+.instagram-heading h2{margin:5px 0 0;font-size:clamp(34px,3.6vw,52px);line-height:1;letter-spacing:-.045em}
+.instagram-profile-link{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:12px 18px;border:1px solid #b9e7e3;border-radius:12px;background:linear-gradient(135deg,#e9fbf9,#f6fffe);color:#087d82;font-weight:850;text-decoration:none;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.instagram-profile-link:hover{transform:translateY(-2px);border-color:#72d3ca;box-shadow:0 12px 28px rgba(17,144,149,.14)}
+.instagram-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:13px}
+.instagram-tile{position:relative;display:block;aspect-ratio:1;overflow:hidden;border-radius:14px;background:#f2f5f4;text-decoration:none;box-shadow:0 1px 0 rgba(25,35,34,.06)}
+.instagram-tile img{width:100%;height:100%;object-fit:cover;transition:transform .35s ease,filter .35s ease}
+.instagram-tile span{position:absolute;left:10px;right:10px;bottom:10px;padding:8px 10px;border-radius:9px;background:rgba(18,27,30,.78);color:#fff;font-size:11px;font-weight:800;line-height:1.2;opacity:0;transform:translateY(6px);transition:opacity .25s ease,transform .25s ease}
+.instagram-tile:hover img{transform:scale(1.045);filter:saturate(1.04)}
+.instagram-tile:hover span,.instagram-tile:focus-visible span{opacity:1;transform:none}
+
+@media(max-width:1000px){
+  .instagram-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .instagram-tile span{opacity:1;transform:none}
+}
+
+@media(max-width:700px){
+  #catalogStart{padding-top:18px;padding-bottom:34px;scroll-margin-top:88px}
+  .catalog-results{scroll-margin-top:88px}
+  .home-new-products{display:none}
+  .home-promo-stories{padding-top:42px}
+  .instagram-showcase{padding:46px 0 52px}
+  .instagram-heading{align-items:stretch;flex-direction:column;gap:17px;margin-bottom:18px}
+  .instagram-heading h2{font-size:36px}
+  .instagram-profile-link{align-self:flex-start;min-height:44px;padding:10px 14px;font-size:13px}
+  .instagram-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .instagram-tile{border-radius:11px}
+  .instagram-tile span{left:7px;right:7px;bottom:7px;padding:7px 8px;font-size:10px}
+}

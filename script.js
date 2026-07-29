@@ -1503,13 +1503,32 @@ document.addEventListener("click", event => {
   if (els.newMenu && !els.newMenu.classList.contains("hidden") && !els.newMenu.contains(target) && !els.newMenuToggle?.contains(target)) closeNewMenu();
 });
 
-els.prev?.addEventListener("click", () => {
-  if (state.page > 1) { state.page -= 1; loadProducts(); window.scrollTo({ top: 260, behavior: "smooth" }); }
-});
+function scrollToCatalogResults() {
+  const target = document.querySelector(".results-bar") || els.catalogStart;
+  if (!target) return;
+  const stickyOffset = window.innerWidth <= 700 ? 78 : 132;
+  const top = target.getBoundingClientRect().top + window.scrollY - stickyOffset;
+  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+}
 
-els.next?.addEventListener("click", () => {
-  if (state.page < state.totalPages) { state.page += 1; loadProducts(); window.scrollTo({ top: 260, behavior: "smooth" }); }
-});
+let pageChangeInProgress = false;
+
+async function changeCatalogPage(direction) {
+  if (pageChangeInProgress) return;
+  const nextPage = Math.min(state.totalPages, Math.max(1, state.page + direction));
+  if (nextPage === state.page) return;
+  pageChangeInProgress = true;
+  state.page = nextPage;
+  try {
+    await loadProducts();
+    window.requestAnimationFrame(scrollToCatalogResults);
+  } finally {
+    pageChangeInProgress = false;
+  }
+}
+
+els.prev?.addEventListener("click", () => changeCatalogPage(-1));
+els.next?.addEventListener("click", () => changeCatalogPage(1));
 
 window.addEventListener("resize", () => {
   window.clearTimeout(window.__demoShopCarouselResize);
