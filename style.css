@@ -41,9 +41,17 @@
 /* Jednostavan višestepeni meni v31 */
 .categories-toggle span{display:inline-block;transition:transform .2s ease}.categories-toggle[aria-expanded="true"] span{transform:rotate(180deg)}
 .categories-menu{padding:0;overflow:hidden}.categories-grid{display:block}.category-browser{display:grid;grid-template-columns:.9fr 1fr 1.15fr;min-height:430px;max-height:calc(100vh - 150px);background:#fff;animation:menu-reveal .2s ease both}.category-level{min-width:0;padding:24px;overflow:auto;border-right:1px solid var(--line)}.category-level:last-child{border-right:0}.category-level-secondary{background:#fafafa}.category-level-tertiary{background:linear-gradient(145deg,#fff 0%,#fff7f8 100%)}.category-level-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;min-height:52px;margin-bottom:13px}.category-level-heading>div{display:flex;flex-direction:column;gap:3px}.category-level-heading span{color:var(--red);font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.category-level-heading strong{font-size:18px;line-height:1.2}.menu-all-link{flex:none;border:0;background:transparent;color:var(--red);padding:4px 0;font-size:11px;font-weight:900;cursor:pointer}.menu-step-list{display:flex;flex-direction:column;gap:4px}.menu-step-button{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto 14px;align-items:center;gap:9px;border:0;border-radius:9px;background:transparent;padding:10px 11px;text-align:left;color:var(--ink);font-size:12px;font-weight:780;cursor:pointer;transition:background .16s ease,color .16s ease,transform .16s ease}.menu-step-button small{color:var(--muted);font-size:10px}.menu-step-button b{color:#bbb;font-size:18px;font-weight:500}.menu-step-button:hover{background:#fff;transform:translateX(2px)}.category-level-primary .menu-step-button.active{background:var(--ink);color:#fff}.category-level-primary .menu-step-button.active small,.category-level-primary .menu-step-button.active b{color:#ddd}.category-level-secondary .menu-step-button.active{background:#fff;border:1px solid #ffd7da;color:var(--red);box-shadow:0 5px 18px rgba(20,20,24,.05)}.menu-featured-action{width:100%;display:flex;align-items:center;justify-content:space-between;gap:18px;border:0;border-radius:12px;background:var(--ink);color:#fff;padding:15px 16px;text-align:left;cursor:pointer}.menu-featured-action span{font-size:12px}.menu-featured-action b{font-size:19px}.menu-tertiary-list{display:flex;flex-direction:column;gap:7px;margin-top:13px}.menu-tertiary-list button{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #f0dfe1;border-radius:10px;background:#fff;padding:12px 13px;color:var(--ink);font-size:12px;font-weight:800;text-align:left;cursor:pointer;transition:border-color .16s ease,transform .16s ease}.menu-tertiary-list button:hover{border-color:var(--red);transform:translateX(2px)}.menu-tertiary-list button b{color:var(--red);font-size:16px}.menu-empty-copy{margin:8px 0;color:var(--muted);font-size:12px;line-height:1.55}.categories-menu.hidden{display:none}@keyframes menu-reveal{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:translateY(0)}}
+.category-mobile-toolbar{display:none}
 @media(max-width:900px){.category-browser{grid-template-columns:.9fr 1fr}.category-level-tertiary{grid-column:1/-1;border-top:1px solid var(--line)}.menu-tertiary-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:700px){body.menu-open{overflow:hidden}.categories-menu{overflow:auto}.category-browser{display:block;max-height:none}.category-level{overflow:visible;border-right:0;border-bottom:1px solid var(--line);padding:18px}.menu-step-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.menu-step-button{padding:10px 9px}.menu-tertiary-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:430px){.menu-step-list,.menu-tertiary-list{grid-template-columns:1fr}.category-level-heading strong{font-size:16px}}
+@media(max-width:700px){body.menu-open{overflow:hidden}body.menu-open .catalog-nav{z-index:120}.categories-menu{position:fixed;z-index:110;inset:0;top:0;max-height:none;overflow:hidden;background:#fff}.categories-menu>.container{width:100%;height:100%;padding:0}.category-browser{display:flex;max-height:none;min-height:0;height:100dvh;flex-direction:column;overflow:hidden;animation:none}.category-mobile-toolbar{display:grid;grid-template-columns:82px 1fr 44px;align-items:center;gap:8px;min-height:70px;padding:11px 14px;border-bottom:1px solid var(--line);background:#fff}.category-mobile-toolbar>div{display:grid;gap:2px;text-align:center}.category-mobile-toolbar small{color:var(--brand-teal-dark);font-size:8px;font-weight:950;letter-spacing:.14em}.category-mobile-toolbar strong{font-size:13px}.category-mobile-back,.category-mobile-close{height:42px;border:0;border-radius:10px;background:var(--brand-soft);color:var(--ink);font-weight:900;cursor:pointer}.category-mobile-back{display:flex;align-items:center;justify-content:center;gap:6px}.category-mobile-back:disabled{visibility:hidden}.category-mobile-close{font-size:25px}.category-level{display:none;flex:1;overflow:auto;border:0;padding:20px 16px 30px}.category-browser[data-mobile-step="1"] .category-level-primary,.category-browser[data-mobile-step="2"] .category-level-secondary,.category-browser[data-mobile-step="3"] .category-level-tertiary{display:block}.category-level-heading{min-height:0;margin-bottom:16px}.category-level-heading strong{font-size:20px}.menu-step-list,.menu-tertiary-list{display:grid;grid-template-columns:1fr;gap:8px}.menu-step-button{min-height:52px;padding:12px 13px;border:1px solid var(--line);background:#fff;font-size:13px}.category-level-primary .menu-step-button.active{border-color:var(--ink)}.category-level-secondary{background:#fafcfb}.category-level-tertiary{background:linear-gradient(145deg,#fff 0%,#f3fbf8 100%)}.menu-featured-action{min-height:58px}.menu-tertiary-list button{min-height:52px;padding:13px}.menu-all-link{padding:8px 0;font-size:12px}}
+
+/* v66 - veza ka Demo Group sajtu */
+.group-site-nav-link,.group-site-header-link{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border:1px solid #b9ddd5;border-radius:999px;color:var(--brand-teal-dark);font-size:12px;font-weight:900;transition:.2s ease}
+.group-site-nav-link{padding:9px 13px}
+.group-site-header-link{padding:9px 12px}
+.group-site-nav-link:hover,.group-site-header-link:hover{border-color:var(--brand-teal-dark);background:var(--brand-mint);transform:translateY(-1px)}
+@media(max-width:700px){.group-site-nav-link{font-size:11px;padding:9px 11px}.group-site-header-link{font-size:10px;padding:8px}.header-actions{gap:7px}}
+@media(max-width:430px){.category-level-heading strong{font-size:18px}}
 
 /* Izdvojene kolekcije i hero detalji v32 */
 .hero-actions{display:flex;align-items:center;gap:10px;margin-top:26px}.hero-actions a{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:47px;padding:0 18px;border-radius:11px;font-size:12px;font-weight:900;transition:transform .18s ease,background .18s ease,border-color .18s ease}.hero-action-primary{background:var(--red);color:#fff}.hero-action-primary:hover{background:var(--red-dark);transform:translateY(-2px)}.hero-action-secondary{border:1px solid rgba(255,255,255,.25);color:#fff}.hero-action-secondary:hover{border-color:rgba(255,255,255,.55);transform:translateY(-2px)}
@@ -313,7 +321,7 @@ body{background:#fbfdfc}
 .cart-edit-link{color:inherit;text-decoration:none}.cart-item-image.cart-edit-link{transition:transform .2s ease,box-shadow .2s ease}.cart-item-image.cart-edit-link:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(20,60,52,.12)}.cart-item-info h2 .cart-edit-link:hover{color:var(--brand-teal-dark)}.cart-edit-action{display:inline-flex;margin-top:9px;color:var(--brand-teal-dark);font-size:10px;font-weight:900;text-decoration:none}.cart-edit-action:hover{text-decoration:underline}
 
 @media(max-width:1150px){.header-note{display:none}.header-search{max-width:none}.cart-item{grid-template-columns:90px minmax(0,1fr) 110px 120px 28px}.cart-item-image{width:90px;height:86px}}
-@media(max-width:700px){.site-header{position:relative}.header-inner{height:auto;min-height:74px;flex-wrap:wrap;padding:10px 0}.header-search{order:3;flex-basis:100%;max-width:none}.catalog-nav{top:0}.header-actions .back-link{display:none}.nav-inner{height:54px}.portfolio-nav-cta{margin-left:auto!important}.cart-item{grid-template-columns:72px minmax(0,1fr) 28px}.cart-quantity-stepper,.cart-item-price{grid-column:2}.remove-item{grid-column:3;grid-row:1}.add-to-cart-row{grid-template-columns:1fr}.cart-drawer-item{grid-template-columns:64px minmax(0,1fr)}.cart-drawer-image{width:64px;height:64px}.cart-drawer-price{grid-column:2;align-items:flex-start;text-align:left}.cart-drawer-price button{margin-top:5px}.search-suggestion-copy strong{font-size:13px}}
+@media(max-width:700px){.site-header{position:relative}.header-inner{height:auto;min-height:74px;flex-wrap:wrap;padding:10px 0}.header-search{order:3;flex-basis:100%;max-width:none}.catalog-nav{top:0}.header-actions .back-link{display:inline-flex;align-items:center;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}.nav-inner{height:54px}.portfolio-nav-cta{margin-left:auto!important}.cart-item{grid-template-columns:72px minmax(0,1fr) 28px}.cart-quantity-stepper,.cart-item-price{grid-column:2}.remove-item{grid-column:3;grid-row:1}.add-to-cart-row{grid-template-columns:1fr}.cart-drawer-item{grid-template-columns:64px minmax(0,1fr)}.cart-drawer-image{width:64px;height:64px}.cart-drawer-price{grid-column:2;align-items:flex-start;text-align:left}.cart-drawer-price button{margin-top:5px}.search-suggestion-copy strong{font-size:13px}}
 
 /* v57 - vidljive slike pretrage, jasna količina i čist footer logo */
 .header-search .search-suggestion-image{display:block;width:76px;height:62px;flex:0 0 76px;object-fit:contain;opacity:0;transition:opacity .18s ease}
@@ -331,3 +339,51 @@ body{background:#fbfdfc}
 .footer-logo-clean b{font-weight:800}
 @media(max-width:1150px) and (min-width:701px){.cart-item{grid-template-columns:90px minmax(0,1fr) 118px 120px 28px}}
 @media(max-width:700px){.header-search .search-suggestion-image{width:58px;height:52px;flex-basis:58px}.cart-item{grid-template-columns:72px minmax(0,1fr) 28px}.cart-quantity-stepper{width:116px}.footer-logo-clean img{width:54px!important;height:54px!important}.footer-logo-clean span{font-size:24px}}
+
+/* DemoShop V67: katalog ranije, kompaktniji noviteti i Instagram galerija */
+main{display:flex;flex-direction:column}
+main>.promo-banner-section{order:1}
+main>#catalogStart{order:2}
+main>.home-promo-stories{order:3}
+main>.home-highlights{order:4}
+main>.home-new-products{order:5}
+main>.instagram-showcase{order:6}
+
+#catalogStart{padding-top:30px;padding-bottom:48px;scroll-margin-top:132px}
+.catalog-results{scroll-margin-top:132px}
+.home-promo-stories{padding-top:58px}
+.home-new-products{padding:44px 0 52px;background:#f7f9f9}
+.home-new-products .container{width:min(1220px,calc(100% - 36px))}
+.new-products-heading h2{font-size:clamp(30px,2.7vw,40px)}
+.new-products-track .product-card{flex-basis:calc((100% - 64px)/5)}
+
+.instagram-showcase{padding:64px 0 68px;background:#fff}
+.instagram-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:28px;margin-bottom:25px}
+.instagram-heading h2{margin:5px 0 0;font-size:clamp(34px,3.6vw,52px);line-height:1;letter-spacing:-.045em}
+.instagram-profile-link{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:12px 18px;border:1px solid #b9e7e3;border-radius:12px;background:linear-gradient(135deg,#e9fbf9,#f6fffe);color:#087d82;font-weight:850;text-decoration:none;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.instagram-profile-link:hover{transform:translateY(-2px);border-color:#72d3ca;box-shadow:0 12px 28px rgba(17,144,149,.14)}
+.instagram-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:13px}
+.instagram-tile{position:relative;display:block;aspect-ratio:1;overflow:hidden;border-radius:14px;background:#f2f5f4;text-decoration:none;box-shadow:0 1px 0 rgba(25,35,34,.06)}
+.instagram-tile img{width:100%;height:100%;object-fit:cover;transition:transform .35s ease,filter .35s ease}
+.instagram-tile span{position:absolute;left:10px;right:10px;bottom:10px;padding:8px 10px;border-radius:9px;background:rgba(18,27,30,.78);color:#fff;font-size:11px;font-weight:800;line-height:1.2;opacity:0;transform:translateY(6px);transition:opacity .25s ease,transform .25s ease}
+.instagram-tile:hover img{transform:scale(1.045);filter:saturate(1.04)}
+.instagram-tile:hover span,.instagram-tile:focus-visible span{opacity:1;transform:none}
+
+@media(max-width:1000px){
+  .instagram-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .instagram-tile span{opacity:1;transform:none}
+}
+
+@media(max-width:700px){
+  #catalogStart{padding-top:18px;padding-bottom:34px;scroll-margin-top:88px}
+  .catalog-results{scroll-margin-top:88px}
+  .home-new-products{display:none}
+  .home-promo-stories{padding-top:42px}
+  .instagram-showcase{padding:46px 0 52px}
+  .instagram-heading{align-items:stretch;flex-direction:column;gap:17px;margin-bottom:18px}
+  .instagram-heading h2{font-size:36px}
+  .instagram-profile-link{align-self:flex-start;min-height:44px;padding:10px 14px;font-size:13px}
+  .instagram-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .instagram-tile{border-radius:11px}
+  .instagram-tile span{left:7px;right:7px;bottom:7px;padding:7px 8px;font-size:10px}
+}

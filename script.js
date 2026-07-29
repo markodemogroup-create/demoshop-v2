@@ -1,6 +1,8 @@
 const API_BASE = "https://demo-group-api.marko-demogroup.workers.dev";
 const PAGE_LIMIT = 20;
 const DETAIL_CONCURRENCY = 4;
+const HERO_ROTATION_MS = 4000;
+const HERO_MANUAL_PAUSE_MS = 6500;
 
 const CUSTOM_COLLECTIONS = {
   "swiss-pens": { label: "Swiss Made olovke", terms: ["10.222", "10.220", "10.218", "10.217"] },
@@ -78,10 +80,11 @@ const variantDetailCache = new Map();
 const groupAvailabilityCache = new Map();
 let heroSlideIndex = 0;
 let heroRotationTimer;
+let heroRotationResumeTimer;
 let newProductsCarousel;
 let promoStoriesCarousel;
 let menuCategories = [];
-const menuSelection = { categoryCode: "", subCategoryCode: "" };
+const menuSelection = { categoryCode: "", subCategoryCode: "", mobileStep: 1 };
 
 const initialUrlParams = new URLSearchParams(window.location.search);
 state.search = initialUrlParams.get("search") || "";
@@ -128,6 +131,48 @@ function escapeHtml(value) {
   })[character]);
 }
 
+function normalizeCatalogCode(value) {
+  return String(value || "").toLocaleLowerCase("sr-Latn").replace(/[^a-z0-9]/g, "");
+}
+
+function formatNumericCatalogCode(value) {
+  const compact = normalizeCatalogCode(value);
+  if (!/^\d+$/.test(compact) || compact.length <= 2) return String(value || "").trim();
+
+  const groups = [compact.slice(0, 2)];
+  if (compact.length > 2) groups.push(compact.slice(2, 5));
+  if (compact.length > 5) groups.push(compact.slice(5));
+  return groups.filter(Boolean).join(".");
+}
+
+function searchQueryForApi(value) {
+  const query = String(value || "").trim();
+  const compact = normalizeCatalogCode(query);
+  return /^\d+$/.test(compact) ? formatNumericCatalogCode(compact) : query;
+}
+
+function productCodeSearchRank(product, query) {
+  const needle = normalizeCatalogCode(query);
+  if (!needle) return 3;
+
+  const codes = [product?.modelCode, product?.representativeCode]
+    .map(normalizeCatalogCode)
+    .filter(Boolean);
+
+  if (codes.some(code => code === needle)) return 0;
+  if (codes.some(code => code.startsWith(needle))) return 1;
+  if (codes.some(code => code.includes(needle))) return 2;
+  return 3;
+}
+
+function sortProductsForSearch(products, query) {
+  if (!query) return products;
+  return products
+    .map((product, index) => ({ product, index, rank: productCodeSearchRank(product, query) }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .map(item => item.product);
+}
+
 const DISPLAY_COLOR_WORDS = /^(crn|crna|crni|crno|crne|bel|bela|beli|belo|bele|bijel|bijela|plav|plava|plavi|plavo|crven|crvena|crveni|crveno|zelen|zelena|zeleni|zeleno|žut|žuta|žuti|žuto|zut|zuta|zuti|zuto|siv|siva|sivi|sivo|roze|roza|pink|narandžast|narandžasta|narandzast|narandzasta|ljubičast|ljubičasta|ljubicast|ljubicasta|braon|teget|bež|bez|bordo|tirkiz|tirkizna|ciklama|lila|srebrn|srebrna|zlatn|zlatna|transparentan|transparentna)$/i;
 
 function productDisplayName(value) {
@@ -167,9 +212,11 @@ function highlightSearchMatch(value, query) {
   if (!needle) return escapeHtml(text);
   const index = text.toLocaleLowerCase("sr-Latn").indexOf(needle.toLocaleLowerCase("sr-Latn"));
   if (index < 0) {
-    const normalize = window.DemoShopSearch?.normalizeSearchText;
-    if (normalize && normalize(text).includes(normalize(needle))) return `<mark>${escapeHtml(text)}</mark>`;
-    return escapeHtml(text);
+    const normalizedText = normalizeCatalogCode(text);
+    const normalizedNeedle = normalizeCatalogCode(needle);
+    return normalizedNeedle && normalizedText.includes(normalizedNeedle)
+      ? `<mark>${escapeHtml(text)}</mark>`
+      : escapeHtml(text);
   }
   return `${escapeHtml(text.slice(0, index))}<mark>${escapeHtml(text.slice(index, index + needle.length))}</mark>${escapeHtml(text.slice(index + needle.length))}`;
 }
@@ -195,15 +242,12 @@ async function loadSearchSuggestions() {
   if (query.length < 2) return hideSearchSuggestions();
 
   try {
-    const searchParams = new URLSearchParams({ search: query, page: "1", limit: "6" });
-    const data = window.DemoShopSearch
-      ? await window.DemoShopSearch.fetchGroupedProducts(API_BASE, searchParams, { headers: { Accept: "application/json" } })
-      : await fetch(`${API_BASE}/products-grouped?${searchParams}`, { headers: { Accept: "application/json" } }).then(response => {
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          return response.json();
-        });
+    const searchParams = new URLSearchParams({ search: searchQueryForApi(query), page: "1", limit: "6" });
+    const response = await fetch(`${API_BASE}/products-grouped?${searchParams}`, { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
     if (requestId !== state.suggestionRequestId) return;
-    const products = Array.isArray(data.products) ? data.products : [];
+    const products = sortProductsForSearch(Array.isArray(data.products) ? data.products : [], query);
     if (!products.length) {
       els.searchSuggestions.innerHTML = `<div class="search-suggestion-empty">Nema pronađenih proizvoda.</div>`;
     } else {
@@ -686,19 +730,28 @@ function activateHeroSlide(index, restartRotation = true) {
     dot.setAttribute("aria-current", dotIndex === heroSlideIndex ? "true" : "false");
   });
 
-  if (restartRotation) startHeroRotation();
+  if (restartRotation) resumeHeroRotationAfterInteraction();
 }
 
 function stopHeroRotation() {
   window.clearInterval(heroRotationTimer);
+  window.clearTimeout(heroRotationResumeTimer);
   heroRotationTimer = undefined;
+  heroRotationResumeTimer = undefined;
 }
 
 function startHeroRotation() {
   stopHeroRotation();
   const slideCount = els.heroShowcase?.querySelectorAll("[data-hero-slide]").length || 0;
   if (slideCount < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  heroRotationTimer = window.setInterval(() => activateHeroSlide(heroSlideIndex + 1, false), 5800);
+  heroRotationTimer = window.setInterval(() => activateHeroSlide(heroSlideIndex + 1, false), HERO_ROTATION_MS);
+}
+
+function resumeHeroRotationAfterInteraction() {
+  stopHeroRotation();
+  const slideCount = els.heroShowcase?.querySelectorAll("[data-hero-slide]").length || 0;
+  if (slideCount < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  heroRotationResumeTimer = window.setTimeout(startHeroRotation, HERO_MANUAL_PAUSE_MS);
 }
 
 function initializePromoBanner() {
@@ -729,7 +782,9 @@ function initializePromoBanner() {
   els.heroShowcase.addEventListener("pointerenter", stopHeroRotation);
   els.heroShowcase.addEventListener("pointerleave", startHeroRotation);
   els.heroShowcase.addEventListener("focusin", stopHeroRotation);
-  els.heroShowcase.addEventListener("focusout", startHeroRotation);
+  els.heroShowcase.addEventListener("focusout", event => {
+    if (!els.heroShowcase.contains(event.relatedTarget)) startHeroRotation();
+  });
   let heroTouchX = null;
   els.heroShowcase.addEventListener("touchstart", event => { heroTouchX = event.touches[0]?.clientX ?? null; }, { passive: true });
   els.heroShowcase.addEventListener("touchend", event => {
@@ -738,6 +793,10 @@ function initializePromoBanner() {
     heroTouchX = null;
     if (Math.abs(distance) > 45) activateHeroSlide(heroSlideIndex + (distance < 0 ? 1 : -1));
   }, { passive: true });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopHeroRotation();
+    else startHeroRotation();
+  });
 
   activateHeroSlide(0, false);
   startHeroRotation();
@@ -980,9 +1039,15 @@ function renderCategoriesMenu() {
 
   menuSelection.categoryCode = activeCategory.code;
   menuSelection.subCategoryCode = activeSubCategory?.code || "";
+  const mobileStep = Math.min(3, Math.max(1, Number(menuSelection.mobileStep) || 1));
 
   els.categoriesGrid.innerHTML = `
-    <div class="category-browser">
+    <div class="category-browser" data-mobile-step="${mobileStep}">
+      <div class="category-mobile-toolbar">
+        <button type="button" class="category-mobile-back" data-menu-back ${mobileStep === 1 ? "disabled" : ""} aria-label="Prethodni korak">← <span>Nazad</span></button>
+        <div><small>KATEGORIJE</small><strong>Korak ${mobileStep} od 3</strong></div>
+        <button type="button" class="category-mobile-close" data-menu-close aria-label="Zatvori kategorije">×</button>
+      </div>
       <section class="category-level category-level-primary" aria-label="Kategorije">
         <div class="category-level-heading">
           <div><span>Korak 1</span><strong>Kategorije</strong></div>
@@ -1159,7 +1224,7 @@ async function loadFacetFilters() {
   const params = new URLSearchParams({ v: "48" });
   if (state.category) params.set("category", state.category);
   if (state.subCategory) params.set("subCategory", state.subCategory);
-  if (state.search) params.set("search", state.search);
+  if (state.search) params.set("search", searchQueryForApi(state.search));
   try {
     const response = await fetch(`${API_BASE}/catalog-filters?${params}`, { headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1250,7 +1315,7 @@ async function loadProducts() {
   els.grid.innerHTML = "";
 
   const params = new URLSearchParams({ page: String(state.page), limit: String(state.status ? 32 : PAGE_LIMIT) });
-  if (state.search) params.set("search", state.search);
+  if (state.search) params.set("search", searchQueryForApi(state.search));
   if (state.category) params.set("category", state.category);
   if (state.subCategory) params.set("subCategory", state.subCategory);
   if (!state.status) appendAdvancedFilters(params);
@@ -1263,18 +1328,12 @@ async function loadProducts() {
       const endpoint = state.status
         ? `${API_BASE}/status-products?status=${encodeURIComponent(state.status)}&page=${state.page}&limit=32&v=49`
         : `${API_BASE}/products-grouped?${params}`;
-      if (!state.status && window.DemoShopSearch) {
-        data = await window.DemoShopSearch.fetchGroupedProducts(API_BASE, params, {
-          headers: { Accept: "application/json" },
-        });
-      } else {
-        const response = await fetch(endpoint, {
-          headers: { Accept: "application/json" },
-          cache: state.status ? "no-store" : "default",
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        data = await response.json();
-      }
+      const response = await fetch(endpoint, {
+        headers: { Accept: "application/json" },
+        cache: state.status ? "no-store" : "default",
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      data = await response.json();
       if (!data.success) throw new Error(data.error || "Katalog trenutno nije dostupan.");
     }
     if (requestId !== state.requestId) return;
@@ -1300,7 +1359,7 @@ async function loadProducts() {
     els.clearSearch.classList.toggle("hidden", !(state.search || state.collection));
     els.pagination?.classList.toggle("hidden", state.totalPages <= 1);
 
-    const products = Array.isArray(data.products) ? data.products : [];
+    const products = sortProductsForSearch(Array.isArray(data.products) ? data.products : [], state.search);
     renderCategoryFilterTree();
     loadFacetFilters();
     if (!products.length) {
@@ -1370,6 +1429,7 @@ els.categoriesToggle?.addEventListener("click", () => {
   if (willOpen && menuCategories.length) {
     menuSelection.categoryCode = state.category;
     menuSelection.subCategoryCode = state.subCategory;
+    menuSelection.mobileStep = 1;
     renderCategoriesMenu();
   }
   els.categoriesMenu.classList.toggle("hidden", !willOpen);
@@ -1411,14 +1471,31 @@ els.categoriesGrid?.addEventListener("click", event => {
   if (categoryStep) {
     menuSelection.categoryCode = categoryStep.dataset.menuCategory || "";
     menuSelection.subCategoryCode = "";
+    if (window.matchMedia("(max-width:700px)").matches) menuSelection.mobileStep = 2;
     renderCategoriesMenu();
+    els.categoriesMenu.scrollTop = 0;
     return;
   }
 
   const subCategoryStep = target.closest("button[data-menu-subcategory]");
   if (subCategoryStep) {
     menuSelection.subCategoryCode = subCategoryStep.dataset.menuSubcategory || "";
+    if (window.matchMedia("(max-width:700px)").matches) menuSelection.mobileStep = 3;
     renderCategoriesMenu();
+    els.categoriesMenu.scrollTop = 0;
+    return;
+  }
+
+  if (target.closest("[data-menu-back]")) {
+    menuSelection.mobileStep = Math.max(1, (Number(menuSelection.mobileStep) || 1) - 1);
+    renderCategoriesMenu();
+    els.categoriesMenu.scrollTop = 0;
+    return;
+  }
+
+  if (target.closest("[data-menu-close]")) {
+    closeCategoriesMenu();
+    els.categoriesToggle.focus();
     return;
   }
 
@@ -1492,13 +1569,32 @@ document.addEventListener("click", event => {
   if (els.newMenu && !els.newMenu.classList.contains("hidden") && !els.newMenu.contains(target) && !els.newMenuToggle?.contains(target)) closeNewMenu();
 });
 
-els.prev?.addEventListener("click", () => {
-  if (state.page > 1) { state.page -= 1; loadProducts(); window.scrollTo({ top: 260, behavior: "smooth" }); }
-});
+function scrollToCatalogResults() {
+  const target = document.querySelector(".results-bar") || els.catalogStart;
+  if (!target) return;
+  const stickyOffset = window.innerWidth <= 700 ? 78 : 132;
+  const top = target.getBoundingClientRect().top + window.scrollY - stickyOffset;
+  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+}
 
-els.next?.addEventListener("click", () => {
-  if (state.page < state.totalPages) { state.page += 1; loadProducts(); window.scrollTo({ top: 260, behavior: "smooth" }); }
-});
+let pageChangeInProgress = false;
+
+async function changeCatalogPage(direction) {
+  if (pageChangeInProgress) return;
+  const nextPage = Math.min(state.totalPages, Math.max(1, state.page + direction));
+  if (nextPage === state.page) return;
+  pageChangeInProgress = true;
+  state.page = nextPage;
+  try {
+    await loadProducts();
+    window.requestAnimationFrame(scrollToCatalogResults);
+  } finally {
+    pageChangeInProgress = false;
+  }
+}
+
+els.prev?.addEventListener("click", () => changeCatalogPage(-1));
+els.next?.addEventListener("click", () => changeCatalogPage(1));
 
 window.addEventListener("resize", () => {
   window.clearTimeout(window.__demoShopCarouselResize);
