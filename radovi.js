@@ -1,6 +1,6 @@
 const projects = [
   {title:"Arhiv na trgu",cat:"Knjige i monografije",key:"knjige",images:["092925","092937"]},
-  {title:"Monografija škole",cat:"Knjige i monografije",key:"knjige",images:["093007","093008","093020"]},
+  {title:"Monografija škole",cat:"Knjige i monografije",key:"knjige",images:["093008","093020"]},
   {title:"Crno-beli spomenar",cat:"Knjige i monografije",key:"knjige",images:["093048","093057"]},
   {title:"Drina plače i pamti",cat:"Knjige i monografije",key:"knjige",images:["093130","093139"]},
   {title:"M1 fascikla",cat:"Fascikle",key:"fascikle",images:["093210","093228"]},
@@ -42,7 +42,6 @@ const modal = document.getElementById("workModal");
 const modalImage = document.getElementById("workModalImage");
 const modalTitle = document.getElementById("workModalTitle");
 const modalDescription = document.getElementById("workModalDescription");
-const modalZoom = modal?.querySelector(".work-modal-zoom");
 const modalPrev = modal?.querySelector(".work-modal-prev");
 const modalNext = modal?.querySelector(".work-modal-next");
 let modalProjectIndex = 0;
@@ -105,9 +104,6 @@ function updateWorkModal() {
   const multiple = project.images.length > 1;
   if (modalPrev) modalPrev.hidden = !multiple;
   if (modalNext) modalNext.hidden = !multiple;
-  modal?.classList.remove("is-zoomed");
-  modalZoom?.setAttribute("aria-pressed","false");
-  if (modalZoom) modalZoom.textContent = "Uvećaj sliku ＋";
 }
 
 function openWorkModal(card) {
@@ -150,7 +146,6 @@ grid.addEventListener("click", event => {
 
 function closeWorkModal() {
   modal?.classList.add("hidden");
-  modal?.classList.remove("is-zoomed");
   document.body.style.overflow = "";
   modalOpener?.focus();
 }
@@ -159,16 +154,10 @@ modal?.querySelector(".work-modal-close")?.addEventListener("click", closeWorkMo
 modal?.addEventListener("click", event => { if (event.target === modal) closeWorkModal(); });
 modalPrev?.addEventListener("click", () => moveWorkModal(-1));
 modalNext?.addEventListener("click", () => moveWorkModal(1));
-modalZoom?.addEventListener("click", () => {
-  const zoomed = modal.classList.toggle("is-zoomed");
-  modalZoom.setAttribute("aria-pressed",String(zoomed));
-  modalZoom.textContent = zoomed ? "Vrati prikaz −" : "Uvećaj sliku ＋";
-});
-modalImage?.addEventListener("dblclick", () => modalZoom?.click());
 modal?.addEventListener("touchstart", event => { modalTouchStart = event.changedTouches[0].clientX; }, {passive:true});
 modal?.addEventListener("touchend", event => {
   const distance = event.changedTouches[0].clientX - modalTouchStart;
-  if (Math.abs(distance) > 55 && !modal.classList.contains("is-zoomed")) moveWorkModal(distance < 0 ? 1 : -1);
+  if (Math.abs(distance) > 55) moveWorkModal(distance < 0 ? 1 : -1);
 }, {passive:true});
 document.addEventListener("keydown", event => {
   if (modal?.classList.contains("hidden")) return;
