@@ -13,8 +13,11 @@
   <meta property="og:url" content="https://demoshop.rs/katalog.html">
   <title>Katalog proizvoda | DemoShop</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/brand/favicon.png">
-  <link rel="stylesheet" href="style.css?v=88">
+  <link rel="stylesheet" href="style.css?v=89">
   <link rel="stylesheet" href="catalog-taxonomy.css?v=13">
 </head>
 <body data-demoshop-build="67">
@@ -216,12 +219,13 @@
         <aside id="catalogFilters" class="catalog-filters" aria-label="Filteri kataloga">
           <div class="filters-top">
             <strong>Filteri</strong>
-            <button id="clearAllFilters" type="button">Poništi sve</button>
+            <div><button id="clearAllFilters" type="button">Poništi sve</button><button id="closeMobileFilters" class="close-mobile-filters" type="button" aria-label="Zatvori filtere">×</button></div>
           </div>
           <div id="categoryFilterTree" class="filter-category-tree"></div>
           <div id="dynamicFilters" class="dynamic-filters">
             <p class="filters-loading">Učitavanje filtera…</p>
           </div>
+          <button id="mobileFiltersApply" class="mobile-filters-apply" type="button">Prikaži proizvode</button>
         </aside>
 
         <div class="catalog-results">
@@ -308,6 +312,6 @@
   </footer>
   <script src="cart-store.js?v=71"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=88"></script>
+  <script src="script.js?v=89"></script>
 </body>
 </html>

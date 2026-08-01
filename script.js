@@ -59,6 +59,8 @@ const els = {
   mobileFilterCount: document.getElementById("mobileFilterCount"),
   catalogSort: document.getElementById("catalogSort"),
   catalogLimit: document.getElementById("catalogLimit"),
+  closeMobileFilters: document.getElementById("closeMobileFilters"),
+  mobileFiltersApply: document.getElementById("mobileFiltersApply"),
 };
 
 const state = {
@@ -1298,7 +1300,7 @@ function renderFacetSection(items, stateKey, title, open = true) {
     }).join("");
     return `<details class="filter-section color-filter-section" data-filter-section="${stateKey}" ${open ? "open" : ""}><summary>${escapeHtml(title)}</summary><div class="color-filter-grid">${swatches}</div></details>`;
   }
-  const optionClass = stateKey === "size" ? "filter-options size-filter-grid" : `filter-options ${items.length > 10 ? "scrollable" : ""}`;
+  const optionClass = stateKey === "size" ? "filter-options size-filter-grid" : `filter-options ${items.length > 24 ? "scrollable" : ""}`;
   const options = items.map(item => {
     const value = String(item.value ?? "");
     const label = String(item.label ?? item.value ?? "");
@@ -1680,6 +1682,17 @@ els.mobileFiltersToggle?.addEventListener("click", () => {
   const open = !els.catalogFilters?.classList.contains("open");
   els.catalogFilters?.classList.toggle("open", open);
   els.mobileFiltersToggle.setAttribute("aria-expanded", String(open));
+});
+
+function closeMobileFiltersPanel() {
+  els.catalogFilters?.classList.remove("open");
+  els.mobileFiltersToggle?.setAttribute("aria-expanded", "false");
+}
+
+els.closeMobileFilters?.addEventListener("click", closeMobileFiltersPanel);
+els.mobileFiltersApply?.addEventListener("click", () => {
+  closeMobileFiltersPanel();
+  document.querySelector(".results-bar")?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 els.clearCategory?.addEventListener("click", () => {

@@ -492,3 +492,44 @@ main>.instagram-showcase{order:6}
 .catalog-view-controls #pageInfo{min-width:90px;text-align:right}
 @media(max-width:900px){.results-bar{align-items:flex-start;flex-direction:column}.catalog-view-controls{width:100%;justify-content:flex-start;flex-wrap:wrap}.catalog-view-controls #pageInfo{margin-left:auto}}
 @media(max-width:560px){.catalog-view-controls{display:grid;grid-template-columns:1fr 90px}.catalog-view-controls label{display:flex;align-items:flex-start;flex-direction:column;gap:4px}.catalog-view-controls select{width:100%;height:40px;padding-left:8px}.catalog-view-controls #pageInfo{grid-column:1/-1;margin-left:0;text-align:left}}
+
+/* V89: dugi pregledni filteri, Montserrat i doteran katalog */
+.catalog-shell,.catalog-view-controls,.catalog-layout .product-card{font-family:"Montserrat",ui-sans-serif,system-ui,sans-serif}
+.catalog-layout{grid-template-columns:300px minmax(0,1fr);gap:38px}
+.catalog-filters{position:relative;top:auto;max-height:none;overflow:visible;padding:0 24px 30px 0;scrollbar-width:auto}
+.filters-top{position:relative;top:auto;padding:16px 0 18px}
+.filters-top>div{display:flex;align-items:center;gap:8px}
+.filters-top strong{font-size:20px;font-weight:750}
+.filter-section>summary{min-height:48px;padding:13px 2px;font-size:14px;font-weight:700;line-height:20px}
+.filter-section>summary small{font-size:11px;font-weight:500}
+.filter-option{min-height:28px;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;color:#66716f;font-size:14px;line-height:20px}
+.filter-option input{width:17px;height:17px}
+.filter-option small{font-size:11px;font-weight:500}
+.filter-options{gap:4px;padding-bottom:18px}
+.filter-options.scrollable{max-height:520px;overflow-y:auto;padding-right:10px;scrollbar-width:thin;scrollbar-color:#aebbb8 transparent}
+.filter-options.scrollable::-webkit-scrollbar{width:5px}.filter-options.scrollable::-webkit-scrollbar-thumb{border-radius:8px;background:#aebbb8}
+.size-filter-grid{max-height:none;overflow:visible;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.size-filter-option{min-height:40px}.size-filter-option span{font-size:12px}
+.filter-category-group>summary{min-height:38px;font-size:14px;line-height:20px}
+.filter-category-list button.sub{min-height:34px;font-family:inherit;font-size:13px}
+.results-bar{position:sticky;z-index:12;top:112px;margin:0 -8px;padding:12px 8px 14px;background:rgba(255,255,255,.96);box-shadow:0 8px 18px rgba(24,58,51,.04);backdrop-filter:blur(8px)}
+.catalog-layout .card-media{aspect-ratio:1.18/1}
+.catalog-layout .card-content{padding:15px}
+.catalog-layout .card-content h2{font-size:17px;line-height:1.25}
+.catalog-layout .card-description{display:-webkit-box;min-height:20px;margin:5px 0 0;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:1;font-size:11px}
+.catalog-layout .card-code{margin:7px 0 12px;font-size:11px;font-weight:600}
+.catalog-layout .card-stock{min-height:36px;margin-bottom:10px;padding:7px 9px}
+.catalog-layout .card-meta{padding-top:11px}.catalog-layout .card-price{font-size:17px}
+.close-mobile-filters,.mobile-filters-apply{display:none}
+
+@media(max-width:1050px) and (min-width:901px){.catalog-layout{grid-template-columns:270px minmax(0,1fr);gap:26px}}
+@media(max-width:900px){
+  .catalog-filters{display:none;position:fixed;z-index:90;inset:0 0 0 auto;width:min(380px,94vw);max-height:100dvh;overflow-y:auto;padding:18px 22px 0;background:#fff;box-shadow:-20px 0 50px rgba(0,0,0,.2)}
+  .catalog-filters.open{display:block}
+  .filters-top{position:sticky;z-index:5;top:-18px;margin:0 -2px;padding:18px 2px 14px;background:#fff}
+  .filters-top:before{display:none}.filters-top>strong{display:block}
+  .close-mobile-filters{display:grid;place-items:center;width:36px;height:36px;padding:0!important;border:1px solid #d7e4e1!important;border-radius:50%!important;background:#fff!important;color:#23332f!important;font-size:23px!important;line-height:1}
+  .mobile-filters-apply{position:sticky;z-index:6;display:block;bottom:0;width:calc(100% + 44px);height:58px;margin:20px -22px 0;border:0;background:linear-gradient(135deg,var(--brand-teal),var(--brand-green));color:#fff;font-family:"Montserrat",sans-serif;font-size:14px;font-weight:800;box-shadow:0 -10px 25px rgba(19,67,59,.13)}
+  .filter-options.scrollable{max-height:440px}.size-filter-grid{max-height:440px;overflow-y:auto}
+  .results-bar{top:0}
+}
