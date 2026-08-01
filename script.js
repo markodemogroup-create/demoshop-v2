@@ -57,6 +57,8 @@ const els = {
   clearAllFilters: document.getElementById("clearAllFilters"),
   mobileFiltersToggle: document.getElementById("mobileFiltersToggle"),
   mobileFilterCount: document.getElementById("mobileFilterCount"),
+  catalogSort: document.getElementById("catalogSort"),
+  catalogLimit: document.getElementById("catalogLimit"),
 };
 
 const state = {
@@ -70,12 +72,15 @@ const state = {
   status: "",
   filters: {
     brand: [], color: [], size: [], facetStatus: [], print: [], material: [],
-    capacity: [], theme: [], equipment: [], minPrice: "", maxPrice: "",
+    capacity: [], theme: [], equipment: [], standard: [], protection: [], grammage: [],
+    paperType: [], format: [], productType: [], cut: [], video: [], minPrice: "", maxPrice: "",
   },
   requestId: 0,
   suggestionRequestId: 0,
   suggestionIndex: -1,
   resolvedSearch: "",
+  sort: "default",
+  limit: PAGE_LIMIT,
 };
 
 const variantDetailCache = new Map();
@@ -1213,6 +1218,14 @@ const FACET_CONFIG = [
   ["capacities", "capacity", "Kapacitet"],
   ["themes", "theme", "Tema"],
   ["equipment", "equipment", "Dodatna oprema"],
+  ["standards", "standard", "Standard"],
+  ["protectionLevels", "protection", "Nivo zaštite"],
+  ["grammages", "grammage", "Gramatura"],
+  ["paperTypes", "paperType", "Vrsta papira"],
+  ["formats", "format", "Format"],
+  ["productTypes", "productType", "Tip proizvoda"],
+  ["cuts", "cut", "Kroj"],
+  ["videos", "video", "Video"],
 ];
 
 const FILTER_TITLES = Object.fromEntries(FACET_CONFIG.map(([, stateKey, title]) => [stateKey, title]));
@@ -1412,7 +1425,7 @@ async function loadProducts() {
   els.message.textContent = "Učitavanje proizvoda…";
   els.grid.innerHTML = "";
 
-  const params = new URLSearchParams({ page: String(state.page), limit: String(state.status ? 32 : PAGE_LIMIT) });
+  const params = new URLSearchParams({ page: String(state.page), limit: String(state.status ? 32 : state.limit), sort: state.sort });
   if (state.category) params.set("category", state.category);
   if (state.subCategory) params.set("subCategory", state.subCategory);
   if (!state.status) appendAdvancedFilters(params);
@@ -1663,6 +1676,19 @@ els.clearCategory?.addEventListener("click", () => {
   state.subCategory = "";
   state.collection = "";
   state.collectionLabel = "";
+  state.page = 1;
+  loadProducts();
+});
+
+els.catalogSort?.addEventListener("change", () => {
+  state.sort = els.catalogSort.value || "default";
+  state.page = 1;
+  loadProducts();
+});
+
+els.catalogLimit?.addEventListener("change", () => {
+  const requested = Number(els.catalogLimit.value);
+  state.limit = [20, 32, 48].includes(requested) ? requested : PAGE_LIMIT;
   state.page = 1;
   loadProducts();
 });

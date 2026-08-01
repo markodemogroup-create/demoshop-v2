@@ -14,7 +14,7 @@
   <title>Katalog proizvoda | DemoShop</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
   <link rel="icon" type="image/png" href="assets/brand/favicon.png">
-  <link rel="stylesheet" href="style.css?v=83">
+  <link rel="stylesheet" href="style.css?v=84">
   <link rel="stylesheet" href="catalog-taxonomy.css?v=13">
 </head>
 <body data-demoshop-build="67">
@@ -228,7 +228,11 @@
 
       <div class="results-bar">
         <div><strong id="totalMatches">—</strong> <span id="resultsLabel">proizvoda</span></div>
-        <div id="pageInfo">Strana —</div>
+        <div class="catalog-view-controls">
+          <label>Sortiraj po <select id="catalogSort"><option value="default">Preporučeno</option><option value="price-asc">Cena: najniža</option><option value="price-desc">Cena: najviša</option><option value="name-asc">Naziv: A–Š</option><option value="name-desc">Naziv: Š–A</option></select></label>
+          <label>Prikaz <select id="catalogLimit"><option value="20">20</option><option value="32">32</option><option value="48">48</option></select></label>
+          <div id="pageInfo">Strana —</div>
+        </div>
       </div>
 
       <div id="activeFilter" class="active-filter hidden">
@@ -304,6 +308,6 @@
   </footer>
   <script src="cart-store.js?v=71"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=83"></script>
+  <script src="script.js?v=84"></script>
 </body>
 </html>
