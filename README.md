@@ -1,8 +1,14 @@
-# DemoShop V78
+# DemoShop V79
 
 Paket za postojeći GitHub repozitorijum `demoshop-v2`.
 
-V78 dodatno donosi:
+V79 dodatno donosi:
+
+- svetlije i čistije kartice kategorija;
+- odgovarajuće fotografije proizvoda iz kataloga za svih šest kategorija;
+- usklađen prikaz rokovnika i olovke u bloku za brendiranje;
+- dugme „Pošaljite upit“ koje vodi na DemoGroup kontakt-formu;
+- svetliju društvenu sekciju i zamenjenu fotografiju lifleta;
 
 - moderniji meni i pravilno centrirane slike kategorija;
 - blok „Monografije i arhiva“ sa direktnim pristupom odgovarajućim radovima;
