@@ -35,6 +35,7 @@ const els = {
   newMenu: document.getElementById("newMenu"),
   activeFilter: document.getElementById("activeFilter"),
   activeFilterName: document.getElementById("activeFilterName"),
+  activeFilterChips: document.getElementById("activeFilterChips"),
   clearCategory: document.getElementById("clearCategory"),
   prev: document.getElementById("prevPage"),
   next: document.getElementById("nextPage"),
@@ -1214,6 +1215,8 @@ const FACET_CONFIG = [
   ["equipment", "equipment", "Dodatna oprema"],
 ];
 
+const FILTER_TITLES = Object.fromEntries(FACET_CONFIG.map(([, stateKey, title]) => [stateKey, title]));
+
 const COLOR_FILTER_META = {
   "CRN": ["Crna", "#000000"], "PL": ["Plava", "#04386d"],
   "BL": ["Bela", "#ffffff"], "CV": ["Crvena", "#d90504"],
@@ -1251,18 +1254,22 @@ function updateFilterCounter() {
 
 function renderCategoryFilterTree() {
   if (!els.categoryFilterTree || !menuCategories.length) return;
-  const activeCategory = menuCategories.find(item => item.code === state.category);
-  const categoriesHtml = menuCategories.map(category => `
-    <button type="button" class="${category.code === state.category ? "active" : ""}" data-side-category="${escapeHtml(category.code)}">
-      <span>${escapeHtml(categoryLabel(category.code))}</span><small>${Number(category.count || 0).toLocaleString("sr-RS")}</small>
-    </button>`).join("");
-  const subHtml = activeCategory
-    ? (activeCategory.subCategories || []).map(sub => `
-      <button type="button" class="sub ${sub.code === state.subCategory ? "active" : ""}" data-side-category="${escapeHtml(activeCategory.code)}" data-side-subcategory="${escapeHtml(sub.code)}">
+  const categoriesHtml = menuCategories.map(category => {
+    const active = category.code === state.category;
+    const subCategories = Array.isArray(category.subCategories) ? category.subCategories : [];
+    const subHtml = subCategories.map(sub => `
+      <button type="button" class="sub ${active && sub.code === state.subCategory ? "active" : ""}" data-side-category="${escapeHtml(category.code)}" data-side-subcategory="${escapeHtml(sub.code)}">
         <span>${escapeHtml(subCategoryLabel(sub.code))}</span><small>${Number(sub.count || 0).toLocaleString("sr-RS")}</small>
-      </button>`).join("")
-    : "";
-  els.categoryFilterTree.innerHTML = `<div class="filter-category-title">Kategorija</div><div class="filter-category-list">${categoriesHtml}${subHtml}</div>`;
+      </button>`).join("");
+    return `<details class="filter-category-group" ${active ? "open" : ""}>
+      <summary><span>${escapeHtml(categoryLabel(category.code))}</span><small>${Number(category.count || 0).toLocaleString("sr-RS")}</small></summary>
+      <div class="filter-category-sublist">
+        <button type="button" class="sub all ${active && !state.subCategory ? "active" : ""}" data-side-category="${escapeHtml(category.code)}"><span>Svi proizvodi</span><small>${Number(category.count || 0).toLocaleString("sr-RS")}</small></button>
+        ${subHtml || '<span class="filter-category-empty">Nema dodatnih potkategorija</span>'}
+      </div>
+    </details>`;
+  }).join("");
+  els.categoryFilterTree.innerHTML = `<details class="filter-section category-filter-section" open><summary>Kategorija</summary><div class="filter-category-list">${categoriesHtml}</div></details>`;
 }
 
 function renderFacetSection(items, stateKey, title, open = false) {
@@ -1277,12 +1284,25 @@ function renderFacetSection(items, stateKey, title, open = false) {
     }).join("");
     return `<details class="filter-section color-filter-section" ${open ? "open" : ""}><summary>${escapeHtml(title)}</summary><div class="color-filter-grid">${swatches}</div></details>`;
   }
+  const optionClass = stateKey === "size" ? "filter-options size-filter-grid" : `filter-options ${items.length > 10 ? "scrollable" : ""}`;
   const options = items.map(item => {
     const value = String(item.value ?? "");
     const label = String(item.label ?? item.value ?? "");
-    return `<label class="filter-option"><input type="checkbox" data-filter-key="${stateKey}" value="${escapeHtml(value)}" ${selected.has(value) ? "checked" : ""}><span>${escapeHtml(label)}</span><small>${Number(item.count || 0).toLocaleString("sr-RS")}</small></label>`;
+    return `<label class="filter-option ${stateKey === "size" ? "size-filter-option" : ""}"><input type="checkbox" data-filter-key="${stateKey}" value="${escapeHtml(value)}" ${selected.has(value) ? "checked" : ""}><span>${escapeHtml(label)}</span><small>${Number(item.count || 0).toLocaleString("sr-RS")}</small></label>`;
   }).join("");
-  return `<details class="filter-section" ${open ? "open" : ""}><summary>${escapeHtml(title)}</summary><div class="filter-options ${items.length > 10 ? "scrollable" : ""}">${options}</div></details>`;
+  return `<details class="filter-section" ${open ? "open" : ""}><summary><span>${escapeHtml(title)}</span><small>${items.length}</small></summary><div class="${optionClass}">${options}</div></details>`;
+}
+
+function renderActiveFilterChips() {
+  if (!els.activeFilterChips) return;
+  const chips = [];
+  if (state.category) chips.push({ type: "category", label: state.subCategory ? subCategoryLabel(state.subCategory) : categoryLabel(state.category) });
+  for (const [key, values] of Object.entries(state.filters)) {
+    if (Array.isArray(values)) values.forEach(value => chips.push({ type: "facet", key, value, label: `${FILTER_TITLES[key] || key}: ${key === "color" ? colorFilterMeta(value).name : value}` }));
+  }
+  if (state.filters.minPrice) chips.push({ type: "price", key: "minPrice", label: `Cena od ${state.filters.minPrice} €` });
+  if (state.filters.maxPrice) chips.push({ type: "price", key: "maxPrice", label: `Cena do ${state.filters.maxPrice} €` });
+  els.activeFilterChips.innerHTML = chips.map(chip => `<button type="button" class="filter-chip" data-remove-filter="${chip.type}" data-filter-key="${escapeHtml(chip.key || "")}" data-filter-value="${escapeHtml(chip.value || "")}">${escapeHtml(chip.label)} <span aria-hidden="true">×</span></button>`).join("");
 }
 
 function renderDynamicFilters(data) {
@@ -1433,6 +1453,7 @@ async function loadProducts() {
     els.resultsLabel.textContent = (state.status || state.collection) ? "proizvoda u kolekciji" : (state.search ? `rezultata za „${state.search}”` : "proizvoda");
     els.activeFilter.classList.toggle("hidden", !(state.category || state.status || state.collection || selectedFilterCount()));
     els.activeFilterName.textContent = filterName || "";
+    renderActiveFilterChips();
     els.pageInfo.textContent = (state.status || state.collection)
       ? `${state.collectionLabel} · Strana ${state.page} od ${state.totalPages}`
       : `Strana ${state.page} od ${state.totalPages}`;
@@ -1635,7 +1656,30 @@ els.mobileFiltersToggle?.addEventListener("click", () => {
   els.mobileFiltersToggle.setAttribute("aria-expanded", String(open));
 });
 
-els.clearCategory?.addEventListener("click", () => applyCategory("", ""));
+els.clearCategory?.addEventListener("click", () => {
+  clearAdvancedFilters();
+  state.status = "";
+  state.category = "";
+  state.subCategory = "";
+  state.collection = "";
+  state.collectionLabel = "";
+  state.page = 1;
+  loadProducts();
+});
+
+els.activeFilterChips?.addEventListener("click", event => {
+  const button = event.target instanceof Element ? event.target.closest("[data-remove-filter]") : null;
+  if (!button) return;
+  if (button.dataset.removeFilter === "category") {
+    state.category = "";
+    state.subCategory = "";
+  } else {
+    const key = button.dataset.filterKey || "";
+    if (Array.isArray(state.filters[key])) state.filters[key] = state.filters[key].filter(value => value !== button.dataset.filterValue);
+    else if (key in state.filters) state.filters[key] = "";
+  }
+  applyFacetChange();
+});
 
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") {
