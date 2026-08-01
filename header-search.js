@@ -240,7 +240,7 @@
   form.addEventListener("submit", event => {
     event.preventDefault();
     const query = input.value.trim();
-    window.location.href = query ? `index.html?search=${encodeURIComponent(query)}#catalogStart` : "index.html";
+    window.location.href = query ? `katalog.html?search=${encodeURIComponent(query)}#catalogStart` : "katalog.html";
   });
   document.addEventListener("click", event => {
     if (!form.contains(event.target)) closeSuggestions();

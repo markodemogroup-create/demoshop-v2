@@ -92,7 +92,12 @@ state.search = initialUrlParams.get("search") || "";
 state.collection = initialUrlParams.get("collection") || "";
 state.category = initialUrlParams.get("category") || "";
 state.subCategory = initialUrlParams.get("subCategory") || "";
+state.status = initialUrlParams.get("status") || "";
 if (CUSTOM_COLLECTIONS[state.collection]) state.collectionLabel = CUSTOM_COLLECTIONS[state.collection].label;
+if (state.status) {
+  const statusLabels = { new: "Novo", coming: "Uskoro dolazi", arrived: "Upravo stiglo" };
+  state.collectionLabel = statusLabels[state.status] || state.status;
+}
 Object.keys(state.filters).forEach(key => {
   state.filters[key] = ["minPrice", "maxPrice"].includes(key)
     ? (initialUrlParams.get(key) || "")
