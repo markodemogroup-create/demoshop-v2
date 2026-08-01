@@ -23,8 +23,8 @@ function activateHomeSlide(index) {
 function stopHomeHero() { window.clearInterval(homeHeroTimer); }
 function startHomeHero() {
   stopHomeHero();
-  if (homeSlides.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  homeHeroTimer = window.setInterval(() => activateHomeSlide(homeSlideIndex + 1), 4800);
+  if (homeSlides.length < 2) return;
+  homeHeroTimer = window.setInterval(() => activateHomeSlide(homeSlideIndex + 1), 2000);
 }
 
 if (homeDots) {

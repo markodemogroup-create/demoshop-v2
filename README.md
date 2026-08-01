@@ -1,8 +1,13 @@
-# DemoShop V80
+# DemoShop V81
 
 Paket za postojeći GitHub repozitorijum `demoshop-v2`.
 
-V80 dodatno donosi:
+V81 dodatno donosi:
+
+- veliki DemoShop logo u bloku za brendiranje;
+- oznaku „powered by Demo Group“;
+- otvaranje DemoGroup kontakt-forme u novoj kartici;
+- automatsku promenu početnog banera na svake 2 sekunde;
 
 - prednju stranu plave kutije u društvenoj galeriji;
 - plavu QS40 AIR olovku umesto roze modela;
