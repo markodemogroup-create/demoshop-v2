@@ -105,8 +105,9 @@ document.getElementById("sendQuote").addEventListener("click", async () => {
   const sendButton = document.getElementById("sendQuote");
   const name = document.getElementById("customerName").value.trim();
   const email = document.getElementById("customerEmail").value.trim();
-  if (!name || !email) {
-    formMessage.textContent = "Unesite ime i email pre slanja upita.";
+  const phone = document.getElementById("customerPhone").value.trim();
+  if (!name || !email || !phone) {
+    formMessage.textContent = "Unesite ime i prezime, email i broj telefona pre slanja upita.";
     formMessage.classList.add("form-error");
     return;
   }
@@ -127,7 +128,7 @@ document.getElementById("sendQuote").addEventListener("click", async () => {
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
         website: document.getElementById("website").value,
-        customer: { name, company, email, phone: document.getElementById("customerPhone").value.trim(), note },
+        customer: { name, company, email, phone, note },
         items: window.DemoCart.read(),
       }),
     });
@@ -136,7 +137,7 @@ document.getElementById("sendQuote").addEventListener("click", async () => {
     window.DemoCart.write([]);
     localStorage.removeItem(DRAFT_KEY);
     render();
-    formMessage.textContent = data.quoteReference ? `Upit ${data.quoteReference} je uspešno poslat.` : "Upit je uspešno poslat na Demo Group email.";
+    formMessage.textContent = "Vaš upit je uspešno poslat.";
     formMessage.classList.add("form-success");
     sendButton.textContent = "Upit je poslat ✓";
   } catch (error) {

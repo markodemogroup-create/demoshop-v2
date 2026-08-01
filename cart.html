@@ -6,7 +6,7 @@
   <meta name="description" content="Pošaljite upit za odabrane DemoShop proizvode.">
   <title>Korpa — DemoShop</title>
   <link rel="icon" type="image/png" href="assets/brand/favicon.png">
-  <link rel="stylesheet" href="style.css?v=71">
+  <link rel="stylesheet" href="style.css?v=73">
 </head>
 <body data-demoshop-build="66">
   <header class="site-header"><div class="header-inner">
@@ -30,11 +30,11 @@
       <aside id="cartSummary" class="cart-summary">
         <h2>Podaci za upit</h2>
         <fieldset class="customer-type"><legend>Tip kupca</legend><label><input type="radio" name="customerType" value="Pravno lice" checked> Pravno lice</label><label><input type="radio" name="customerType" value="Fizičko lice"> Fizičko lice</label></fieldset>
-        <label>Ime i prezime<input id="customerName" type="text" required></label>
+        <label>Ime i prezime <span class="required-mark" aria-hidden="true">*</span><input id="customerName" type="text" required aria-required="true"></label>
         <label>Firma<input id="customerCompany" type="text"></label>
         <label>PIB<input id="customerPib" type="text" inputmode="numeric"></label>
-        <label>Email<input id="customerEmail" type="email" required></label>
-        <label>Telefon<input id="customerPhone" type="tel"></label>
+        <label>Email <span class="required-mark" aria-hidden="true">*</span><input id="customerEmail" type="email" required aria-required="true"></label>
+        <label>Broj telefona <span class="required-mark" aria-hidden="true">*</span><input id="customerPhone" type="tel" required aria-required="true"></label>
         <label>Adresa / grad<input id="customerAddress" type="text"></label>
         <label>Napomena<textarea id="customerNote" rows="4" placeholder="Štampa, rok, posebni zahtevi…"></textarea></label>
         <label class="website-field" aria-hidden="true">Website<input id="website" type="text" tabindex="-1" autocomplete="off"></label>
@@ -63,6 +63,6 @@
   </footer>
   <script src="cart-store.js?v=71"></script>
   <script src="header-search.js?v=68"></script>
-  <script src="cart.js?v=59"></script>
+  <script src="cart.js?v=73"></script>
 </body>
 </html>

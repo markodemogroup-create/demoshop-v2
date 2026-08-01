@@ -263,6 +263,7 @@ body{background:#fbfdfc}
 .home-nav-link{font-weight:900;color:var(--brand-teal-dark)}
 .color-button{min-width:58px;height:54px;padding:0 12px;font-size:14px}
 html,body{overflow-x:hidden}
+.required-mark{color:var(--red);font-weight:950}
 @media(max-width:700px){.card-variant-previews button{flex-basis:42px;width:42px;height:42px}.color-filter-option,.color-filter-option>span{width:40px;height:40px}.home-nav-link{flex:none}}
 .status-new{background:linear-gradient(135deg,var(--brand-teal),#24a9b9 52%,var(--brand-green))}
 .status-hit{background:#d60038}
