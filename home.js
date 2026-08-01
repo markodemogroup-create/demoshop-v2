@@ -24,7 +24,7 @@ function stopHomeHero() { window.clearInterval(homeHeroTimer); }
 function startHomeHero() {
   stopHomeHero();
   if (homeSlides.length < 2) return;
-  homeHeroTimer = window.setInterval(() => activateHomeSlide(homeSlideIndex + 1), 2000);
+  homeHeroTimer = window.setInterval(() => activateHomeSlide(homeSlideIndex + 1), 1700);
 }
 
 if (homeDots) {

@@ -1,8 +1,12 @@
-# DemoShop V81
+# DemoShop V82
 
 Paket za postojeći GitHub repozitorijum `demoshop-v2`.
 
-V81 dodatno donosi:
+V82 dodatno donosi:
+
+- potpuno transparentan DemoShop znak bez bele ili sive pravougaone pozadine;
+- uklonjene strelice sa početnog banera;
+- automatsku promenu banera na svake 1,7 sekundi;
 
 - veliki DemoShop logo u bloku za brendiranje;
 - oznaku „powered by Demo Group“;
