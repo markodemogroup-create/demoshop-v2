@@ -1,8 +1,13 @@
-# DemoShop V77
+# DemoShop V78
 
 Paket za postojeći GitHub repozitorijum `demoshop-v2`.
 
-V77 dodatno donosi:
+V78 dodatno donosi:
+
+- moderniji meni i pravilno centrirane slike kategorija;
+- blok „Monografije i arhiva“ sa direktnim pristupom odgovarajućim radovima;
+- rezervno učitavanje fotografija noviteta;
+- Instagram i Facebook sekciju sa tačnim Demo Group profilima;
 
 - novu profesionalnu početnu stranicu na `demoshop.rs`;
 - odvojen kompletan katalog na `katalog.html`;

@@ -61,6 +61,38 @@ function homeImage(model) {
   const id = String(model || "").replace(/[^a-zA-Z0-9]/g, "");
   return id ? `https://apiv2.promosolution.services/content/ModelItem/${id}_000.webp` : "";
 }
+function homeImageCandidates(product) {
+  const ids = [product?.modelCode, product?.representativeCode, product?.representativeVariantId]
+    .map(value => String(value || "").split("-")[0].replace(/[^a-zA-Z0-9]/g, ""))
+    .filter(Boolean);
+  return [...new Set([
+    product?.image,
+    product?.representativeImage,
+    ...ids.flatMap(id => [
+      `https://apiv2.promosolution.services/content/ModelItem/${id}_000.webp`,
+      `https://apiv2.promosolution.services/content/ModelItem/${id}_001.webp`,
+    ]),
+  ].filter(Boolean))];
+}
+
+function loadHomeProductImage(image, candidates) {
+  let candidateIndex = 0;
+  const tryNext = () => {
+    const candidate = candidates[candidateIndex++];
+    if (!candidate) {
+      image.closest(".home-product-media")?.classList.add("no-image");
+      image.removeAttribute("src");
+      return;
+    }
+    image.onerror = tryNext;
+    image.onload = () => {
+      image.onerror = null;
+      image.closest(".home-product-media")?.classList.remove("no-image");
+    };
+    image.src = candidate;
+  };
+  tryNext();
+}
 
 async function loadHomeNewProducts() {
   const grid = document.getElementById("homeNewGrid");
@@ -78,9 +110,9 @@ async function loadHomeNewProducts() {
       const price = homePrice(product.priceMin);
       const stock = Number(product.stock);
       const stockText = Number.isFinite(stock) ? (stock > 0 ? `${Math.floor(stock).toLocaleString("sr-RS")} kom.` : "U dolasku") : "Provera stanja";
-      return `<article class="home-product-card"><a class="home-product-media" href="${href}"><span>NOVO</span><img src="${homeEscape(homeImage(model))}" alt="${homeEscape(product.name || model)}" loading="lazy"></a><div><small>Model ${homeEscape(model)}</small><h3><a href="${href}">${homeEscape(homeProductName(product.name))}</a></h3><p>${homeEscape(stockText)}</p><strong>${homeEscape(price)}</strong><a class="home-product-link" href="${href}" aria-label="Pogledajte proizvod">→</a></div></article>`;
+      return `<article class="home-product-card"><a class="home-product-media" href="${href}"><span>NOVO</span><img alt="${homeEscape(product.name || model)}" loading="lazy" data-home-product-image></a><div><small>Model ${homeEscape(model)}</small><h3><a href="${href}">${homeEscape(homeProductName(product.name))}</a></h3><p>${homeEscape(stockText)}</p><strong>${homeEscape(price)}</strong><a class="home-product-link" href="${href}" aria-label="Pogledajte proizvod">→</a></div></article>`;
     }).join("");
-    grid.querySelectorAll("img").forEach(image => image.addEventListener("error", () => image.closest(".home-product-media")?.classList.add("no-image"), {once:true}));
+    grid.querySelectorAll("[data-home-product-image]").forEach((image, index) => loadHomeProductImage(image, homeImageCandidates(products[index])));
     message.classList.add("hidden");
   } catch (error) {
     message.textContent = "Noviteti će biti dostupni nakon sledećeg osvežavanja kataloga.";
