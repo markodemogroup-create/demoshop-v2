@@ -85,6 +85,7 @@ const state = {
 
 const variantDetailCache = new Map();
 const groupAvailabilityCache = new Map();
+const filterUiState = { open: {}, scrollTop: 0 };
 let heroSlideIndex = 0;
 let heroRotationTimer;
 let heroRotationResumeTimer;
@@ -1285,7 +1286,7 @@ function renderCategoryFilterTree() {
   els.categoryFilterTree.innerHTML = `<details class="filter-section category-filter-section" open><summary>Kategorija</summary><div class="filter-category-list">${categoriesHtml}</div></details>`;
 }
 
-function renderFacetSection(items, stateKey, title, open = false) {
+function renderFacetSection(items, stateKey, title, open = true) {
   if (!Array.isArray(items) || !items.length) return "";
   const selected = new Set(Array.isArray(state.filters[stateKey]) ? state.filters[stateKey] : []);
   if (stateKey === "color") {
@@ -1295,7 +1296,7 @@ function renderFacetSection(items, stateKey, title, open = false) {
       const count = Number(item.count || 0).toLocaleString("sr-RS");
       return `<label class="color-filter-option" title="${escapeHtml(meta.name)} (${count})"><input type="checkbox" data-filter-key="${stateKey}" value="${escapeHtml(value)}" ${selected.has(value) ? "checked" : ""}><span style="--swatch:${escapeHtml(meta.background)}" aria-hidden="true"></span><b class="sr-only">${escapeHtml(meta.name)}</b></label>`;
     }).join("");
-    return `<details class="filter-section color-filter-section" ${open ? "open" : ""}><summary>${escapeHtml(title)}</summary><div class="color-filter-grid">${swatches}</div></details>`;
+    return `<details class="filter-section color-filter-section" data-filter-section="${stateKey}" ${open ? "open" : ""}><summary>${escapeHtml(title)}</summary><div class="color-filter-grid">${swatches}</div></details>`;
   }
   const optionClass = stateKey === "size" ? "filter-options size-filter-grid" : `filter-options ${items.length > 10 ? "scrollable" : ""}`;
   const options = items.map(item => {
@@ -1303,7 +1304,14 @@ function renderFacetSection(items, stateKey, title, open = false) {
     const label = String(item.label ?? item.value ?? "");
     return `<label class="filter-option ${stateKey === "size" ? "size-filter-option" : ""}"><input type="checkbox" data-filter-key="${stateKey}" value="${escapeHtml(value)}" ${selected.has(value) ? "checked" : ""}><span>${escapeHtml(label)}</span><small>${Number(item.count || 0).toLocaleString("sr-RS")}</small></label>`;
   }).join("");
-  return `<details class="filter-section" ${open ? "open" : ""}><summary><span>${escapeHtml(title)}</span><small>${items.length}</small></summary><div class="${optionClass}">${options}</div></details>`;
+  return `<details class="filter-section" data-filter-section="${stateKey}" ${open ? "open" : ""}><summary><span>${escapeHtml(title)}</span><small>${items.length}</small></summary><div class="${optionClass}">${options}</div></details>`;
+}
+
+function rememberFilterUiState() {
+  els.dynamicFilters?.querySelectorAll("details[data-filter-section]").forEach(section => {
+    filterUiState.open[section.dataset.filterSection] = section.open;
+  });
+  if (els.catalogFilters) filterUiState.scrollTop = els.catalogFilters.scrollTop;
 }
 
 function renderActiveFilterChips() {
@@ -1320,13 +1328,15 @@ function renderActiveFilterChips() {
 
 function renderDynamicFilters(data) {
   if (!els.dynamicFilters) return;
+  rememberFilterUiState();
   const facets = data?.facets || {};
-  const sections = FACET_CONFIG.map(([facetKey, stateKey, title], index) =>
-    renderFacetSection(facets[facetKey], stateKey, title, index < 3)
+  const sections = FACET_CONFIG.map(([facetKey, stateKey, title]) =>
+    renderFacetSection(facets[facetKey], stateKey, title, filterUiState.open[stateKey] ?? true)
   ).join("");
   const price = facets.price;
-  const priceSection = price ? `<details class="filter-section" open><summary>Cena</summary><div class="price-filter"><input id="filterMinPrice" type="number" min="0" step="0.01" placeholder="Min ${Number(price.min).toFixed(2)}" value="${escapeHtml(state.filters.minPrice)}"><input id="filterMaxPrice" type="number" min="0" step="0.01" placeholder="Max ${Number(price.max).toFixed(2)}" value="${escapeHtml(state.filters.maxPrice)}"><button type="button" data-apply-price>Primeni cenu</button></div></details>` : "";
+  const priceSection = price ? `<details class="filter-section" data-filter-section="price" ${(filterUiState.open.price ?? true) ? "open" : ""}><summary>Cena</summary><div class="price-filter"><input id="filterMinPrice" type="number" min="0" step="0.01" placeholder="Min ${Number(price.min).toFixed(2)}" value="${escapeHtml(state.filters.minPrice)}"><input id="filterMaxPrice" type="number" min="0" step="0.01" placeholder="Max ${Number(price.max).toFixed(2)}" value="${escapeHtml(state.filters.maxPrice)}"><button type="button" data-apply-price>Primeni cenu</button></div></details>` : "";
   els.dynamicFilters.innerHTML = sections || priceSection ? `${sections}${priceSection}` : `<p class="filters-empty">Dodatni filteri će se pojaviti posle sledećeg osvežavanja kataloga.</p>`;
+  requestAnimationFrame(() => { if (els.catalogFilters) els.catalogFilters.scrollTop = filterUiState.scrollTop; });
   updateFilterCounter();
 }
 
@@ -1359,15 +1369,12 @@ function clearAdvancedFilters() {
 }
 
 function applyFacetChange() {
+  rememberFilterUiState();
   state.status = "";
   state.collection = "";
   state.collectionLabel = "";
   state.page = 1;
   updateFilterCounter();
-  if (window.innerWidth <= 900) {
-    els.catalogFilters?.classList.remove("open");
-    els.mobileFiltersToggle?.setAttribute("aria-expanded", "false");
-  }
   loadProducts();
 }
 
@@ -1648,6 +1655,12 @@ els.dynamicFilters?.addEventListener("click", event => {
   state.filters.maxPrice = document.getElementById("filterMaxPrice")?.value.trim() || "";
   applyFacetChange();
 });
+
+els.dynamicFilters?.addEventListener("toggle", event => {
+  const section = event.target instanceof HTMLDetailsElement ? event.target : null;
+  if (!section?.dataset.filterSection) return;
+  filterUiState.open[section.dataset.filterSection] = section.open;
+}, true);
 
 els.clearAllFilters?.addEventListener("click", () => {
   clearAdvancedFilters();

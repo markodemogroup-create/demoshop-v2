@@ -87,6 +87,7 @@ function loadHomeProductImage(image, candidates) {
     image.onerror = tryNext;
     image.onload = () => {
       image.onerror = null;
+      image.classList.add("loaded");
       image.closest(".home-product-media")?.classList.remove("no-image");
     };
     image.src = candidate;
@@ -120,3 +121,83 @@ async function loadHomeNewProducts() {
   }
 }
 loadHomeNewProducts();
+
+/* V88: živa pretraga proizvoda na početnoj strani */
+const homeSearchInput = document.getElementById("homeSearch");
+const homeSearchSuggestions = document.getElementById("homeSearchSuggestions");
+let homeSearchTimer = 0;
+let homeSearchRequest = 0;
+
+function homeFoldSearch(value) {
+  return String(value || "").toLocaleLowerCase("sr-Latn").replace(/đ/g, "dj").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+function homeCompactCode(value) { return homeFoldSearch(value).replace(/[^a-z0-9]/g, ""); }
+function homeSearchQueries(value) {
+  const query = String(value || "").trim();
+  const compact = homeCompactCode(query);
+  if (/^\d+$/.test(compact)) {
+    const dotted = compact.length > 2 ? [compact.slice(0, 2), compact.slice(2, 5), compact.slice(5)].filter(Boolean).join(".") : compact;
+    return [...new Set([dotted, compact, query])];
+  }
+  const ascii = homeFoldSearch(query);
+  let variants = [""];
+  for (let index = 0; index < ascii.length;) {
+    let choices = [ascii[index]];
+    let step = 1;
+    if (ascii.slice(index, index + 2) === "dj") { choices = ["dj", "đ"]; step = 2; }
+    else if (ascii[index] === "s") choices = ["s", "š"];
+    else if (ascii[index] === "c") choices = ["c", "č", "ć"];
+    else if (ascii[index] === "z") choices = ["z", "ž"];
+    variants = variants.flatMap(prefix => choices.map(choice => prefix + choice)).slice(0, 32);
+    index += step;
+  }
+  return [...new Set([query, ...variants])].slice(0, 32);
+}
+function closeHomeSearchSuggestions() {
+  homeSearchSuggestions?.classList.add("hidden");
+  if (homeSearchSuggestions) homeSearchSuggestions.innerHTML = "";
+  homeSearchInput?.setAttribute("aria-expanded", "false");
+}
+async function loadHomeSearchSuggestions() {
+  const query = homeSearchInput?.value.trim() || "";
+  const requestId = ++homeSearchRequest;
+  if (query.length < 2 || !homeSearchSuggestions) return closeHomeSearchSuggestions();
+  try {
+    let products = [];
+    for (const resolved of homeSearchQueries(query)) {
+      const params = new URLSearchParams({ page: "1", limit: "6", search: resolved });
+      const response = await fetch(`${HOME_API_BASE}/products-grouped?${params}`, { headers: { Accept: "application/json" } });
+      if (!response.ok) continue;
+      const data = await response.json();
+      products = Array.isArray(data.products) ? data.products : [];
+      if (products.length) break;
+    }
+    if (requestId !== homeSearchRequest) return;
+    if (!products.length) {
+      homeSearchSuggestions.innerHTML = `<div class="search-suggestion-empty">Nema pronađenih proizvoda.</div>`;
+    } else {
+      homeSearchSuggestions.innerHTML = products.map((product, index) => {
+        const model = product.modelCode || "";
+        const price = homePrice(product.priceMin);
+        return `<a class="search-suggestion" role="option" href="product.html?model=${encodeURIComponent(model)}&v=39"><span class="search-suggestion-copy"><strong>${homeEscape(homeProductName(product.name))}</strong><small>Model ${homeEscape(model)}</small><em>${homeEscape(price)}</em></span><img class="search-suggestion-image" data-home-search-image="${index}" alt="" loading="lazy"></a>`;
+      }).join("");
+      products.forEach((product, index) => {
+        const image = homeSearchSuggestions.querySelector(`[data-home-search-image="${index}"]`);
+        if (image) loadHomeProductImage(image, homeImageCandidates(product));
+      });
+    }
+    homeSearchSuggestions.classList.remove("hidden");
+    homeSearchInput.setAttribute("aria-expanded", "true");
+  } catch (error) {
+    if (requestId === homeSearchRequest) closeHomeSearchSuggestions();
+    console.error("Početna pretraga trenutno nije dostupna", error);
+  }
+}
+homeSearchInput?.setAttribute("aria-autocomplete", "list");
+homeSearchInput?.setAttribute("aria-expanded", "false");
+homeSearchInput?.addEventListener("input", () => {
+  window.clearTimeout(homeSearchTimer);
+  homeSearchTimer = window.setTimeout(loadHomeSearchSuggestions, 230);
+});
+homeSearchInput?.addEventListener("keydown", event => { if (event.key === "Escape") closeHomeSearchSuggestions(); });
+document.addEventListener("pointerdown", event => { if (!event.target.closest("#homeSearchForm")) closeHomeSearchSuggestions(); });

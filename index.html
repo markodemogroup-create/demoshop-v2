@@ -21,10 +21,11 @@
   <header class="site-header home-header">
     <div class="header-inner">
       <a class="brand" href="index.html" aria-label="DemoShop početna"><img class="brand-logo" src="assets/brand/demoshop-logo.png" alt="DemoShop"></a>
-      <form class="header-search" role="search" action="katalog.html">
+      <form id="homeSearchForm" class="header-search" role="search" action="katalog.html">
         <label class="visually-hidden" for="homeSearch">Pretraga kataloga</label>
         <input id="homeSearch" name="search" type="search" placeholder="Pretražite naziv ili šifru proizvoda" autocomplete="off">
         <button type="submit" aria-label="Pretraži katalog">⌕</button>
+        <div id="homeSearchSuggestions" class="search-suggestions hidden" role="listbox" aria-label="Predlozi proizvoda"></div>
       </form>
       <div class="header-actions"><a class="home-catalog-link" href="katalog.html">Katalog</a><a class="cart-link" href="cart.html">Korpa <span class="cart-count" data-cart-count>0</span></a></div>
     </div>
@@ -153,6 +154,6 @@
     <div class="container footer-bottom"><span>© 2026 Demo Group. Sva prava zadržana.</span><span>Cene su informativne; prikazani su iznosi bez i sa PDV-om.</span></div>
   </footer>
   <script src="cart-store.js?v=71"></script>
-  <script src="home.js?v=82"></script>
+  <script src="home.js?v=88"></script>
 </body>
 </html>
