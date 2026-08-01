@@ -1,8 +1,12 @@
-# DemoShop V79
+# DemoShop V80
 
 Paket za postojeći GitHub repozitorijum `demoshop-v2`.
 
-V79 dodatno donosi:
+V80 dodatno donosi:
+
+- prednju stranu plave kutije u društvenoj galeriji;
+- plavu QS40 AIR olovku umesto roze modela;
+- jedinstvenu svetlu kompoziciju rokovnika i olovke bez odvojenih belih kvadrata;
 
 - svetlije i čistije kartice kategorija;
 - odgovarajuće fotografije proizvoda iz kataloga za svih šest kategorija;

@@ -25,3 +25,8 @@
 .home-social-section{border-top:1px solid #e1ece9;background:linear-gradient(145deg,#f7fbfa,#edf7f4);color:#142d30}.home-social-heading>div>p:last-child{color:#687d79}.home-social-actions>a{border-color:#d8e7e3;background:#fff;box-shadow:0 8px 24px rgba(24,74,67,.06)}.home-social-actions>a:hover{background:#fff;box-shadow:0 15px 30px rgba(24,74,67,.12)}.home-social-actions small{color:#6d817d}.home-social-grid a{border:1px solid #dae7e3;background:#f1f6f4;box-shadow:0 9px 26px rgba(25,70,64,.08)}.home-social-grid img{padding:5px;object-fit:contain;background:#f5f1ee}.home-social-grid span{color:#fff}
 @media(max-width:1050px){.home-branding-visual{margin:0 25px 25px;min-height:360px}}
 @media(max-width:700px){.home-category-card img{padding:12px}.home-branding-visual{min-height:285px;margin:0 13px 13px}.home-social-grid img{padding:3px}}
+
+/* V80: jedinstvena kompozicija proizvoda bez belih kartica */
+.home-branding-visual{isolation:isolate;border-color:rgba(255,255,255,.2);background:#fff}.home-branding-visual:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(220,245,238,.42),transparent 72%);pointer-events:none}.home-branding-visual img{z-index:1;mix-blend-mode:normal;filter:drop-shadow(0 18px 18px rgba(17,53,50,.15));transform:none!important}.home-branding-visual img:first-child{left:2%;top:10%;width:50%;height:80%}.home-branding-visual img:last-child{right:1%;bottom:13%;width:53%;height:58%}
+@media(max-width:700px){.home-branding-visual img:first-child{left:1%;top:12%;width:51%;height:75%}.home-branding-visual img:last-child{right:0;bottom:17%;width:54%;height:50%}}
+.home-branding-visual img{filter:brightness(1.12) contrast(1.06)}
