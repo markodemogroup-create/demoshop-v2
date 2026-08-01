@@ -101,14 +101,14 @@
     if (document.getElementById("cartDrawer")) return;
     document.body.insertAdjacentHTML("beforeend", `
       <div id="cartDrawerBackdrop" class="cart-drawer-backdrop hidden" data-drawer-close></div>
-      <aside id="cartDrawer" class="cart-drawer hidden" aria-hidden="true" aria-label="Vaš upit">
-        <div class="cart-drawer-head"><h2>Upit <small data-drawer-count></small></h2><button type="button" data-drawer-close aria-label="Zatvori korpu">×</button></div>
+      <aside id="cartDrawer" class="cart-drawer hidden" aria-hidden="true" aria-label="Vaša korpa">
+        <div class="cart-drawer-head"><h2>Korpa <small data-drawer-count></small></h2><button type="button" data-drawer-close aria-label="Zatvori korpu">×</button></div>
         <div class="cart-drawer-items" data-drawer-items></div>
         <div class="cart-drawer-footer">
           <div class="drawer-total-line"><span>Ukupno bez PDV-a</span><strong data-drawer-subtotal>0,00 €</strong></div>
           <div class="drawer-total-line"><span>PDV (20%)</span><strong data-drawer-vat>0,00 €</strong></div>
           <div class="drawer-total-line drawer-total-final"><span>Ukupno sa PDV-om</span><strong data-drawer-total>0,00 €</strong></div>
-          <a class="drawer-primary" href="cart.html">Nastavi na upit</a>
+          <a class="drawer-primary" href="cart.html">Otvori korpu</a>
           <button class="drawer-secondary" type="button" data-drawer-close>Nastavi kupovinu</button>
         </div>
       </aside>`);
@@ -144,7 +144,7 @@
         </div>
         <div class="cart-drawer-price"><strong>${lineTotal === null ? "Cena na upit" : money(lineTotal)}</strong>${lineTotal === null ? "" : `<small>${money(lineTotal * (1 + VAT_RATE))} sa PDV-om</small>`}<button type="button" data-drawer-remove="${index}" aria-label="Ukloni proizvod">Ukloni</button></div>
       </article>`;
-    }).join("") : '<div class="cart-drawer-empty"><strong>Upit je prazan</strong><span>Dodajte proizvode iz kataloga.</span></div>';
+    }).join("") : '<div class="cart-drawer-empty"><strong>Korpa je prazna</strong><span>Dodajte proizvode iz kataloga.</span></div>';
 
     const subtotal = items.reduce((sum, item) => {
       const price = Number(item.price);

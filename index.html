@@ -3,11 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="DemoShop katalog promotivnih proizvoda sa bojama, veličinama, cenama i lagerom.">
-  <title>DemoShop — Katalog promotivnih proizvoda</title>
+  <meta name="description" content="DemoShop — promotivni proizvodi, poslovni pokloni, tekstil i štampa. Pregledajte boje, cene i dostupnost i jednostavno dodajte proizvode u korpu.">
+  <link rel="canonical" href="https://demoshop-v2.pages.dev/">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="sr_RS">
+  <meta property="og:title" content="DemoShop | Promotivni proizvodi i poslovni pokloni">
+  <meta property="og:description" content="Promotivni proizvodi, poslovni pokloni, tekstil i štampa sa pregledom boja, cena i dostupnosti.">
+  <meta property="og:url" content="https://demoshop-v2.pages.dev/">
+  <title>DemoShop | Promotivni proizvodi i poslovni pokloni</title>
   <link rel="preconnect" href="https://demo-group-api.marko-demogroup.workers.dev">
   <link rel="icon" type="image/png" href="assets/brand/favicon.png">
-  <link rel="stylesheet" href="style.css?v=67">
+  <link rel="stylesheet" href="style.css?v=71">
   <link rel="stylesheet" href="catalog-taxonomy.css?v=13">
 </head>
 <body data-demoshop-build="67">
@@ -24,12 +31,13 @@
         <div id="searchSuggestions" class="search-suggestions hidden" role="listbox" aria-label="Predlozi proizvoda"></div>
       </form>
       <div class="header-note"><span class="status-dot"></span><span id="apiStatus">Povezivanje sa katalogom</span></div>
-      <a class="cart-link" href="cart.html">Upit <span class="cart-count" data-cart-count>0</span></a>
+      <a class="cart-link" href="cart.html">Korpa <span class="cart-count" data-cart-count>0</span></a>
     </div>
   </header>
 
   <nav class="catalog-nav" aria-label="Glavna navigacija kataloga">
     <div class="container nav-inner">
+      <a class="portfolio-nav-link home-nav-link" href="index.html" aria-label="Povratak na početnu stranicu">Početna</a>
       <button id="categoriesToggle" class="categories-toggle" type="button" aria-expanded="false" aria-controls="categoriesMenu">Kategorije <span aria-hidden="true">⌄</span></button>
       <div class="new-menu-wrap">
         <button id="newMenuToggle" class="new-menu-toggle" type="button" aria-expanded="false" aria-controls="newMenu">Novo <span aria-hidden="true">⌄</span></button>
@@ -45,7 +53,7 @@
       <button class="quick-category" type="button" data-category="TP">Torbe i putovanje</button>
       <button class="quick-category" type="button" data-category="OL">Olovke</button>
       <a class="portfolio-nav-link portfolio-nav-cta" href="radovi.html">Naši proizvodi</a>
-      <a class="portfolio-nav-link group-site-nav-link" href="https://demo-group.pages.dev/">Demo Group <span aria-hidden="true">↗</span></a>
+      <a class="portfolio-nav-link group-site-nav-link" href="https://demogroup.rs/" target="_blank" rel="noopener">Demo Group <span aria-hidden="true">↗</span></a>
     </div>
     <div id="categoriesMenu" class="categories-menu hidden">
       <div class="container"><div id="categoriesGrid" class="categories-grid"></div></div>
@@ -286,16 +294,16 @@
       <div class="footer-about">
         <a class="footer-logo footer-logo-clean" href="index.html" aria-label="DemoShop početna"><img src="assets/brand/demoshop-icon-transparent-v59.png" alt=""><span><b>DEMO</b><b>SHOP</b></span></a>
         <p>Katalog promotivnih proizvoda i realizovane štampe kompanije Demo Group.</p>
-        <a class="footer-company-link" href="https://demo-group.pages.dev/" target="_blank" rel="noopener">Posetite zvanični Demo Group sajt <span>↗</span></a>
+        <a class="footer-company-link" href="https://demogroup.rs/" target="_blank" rel="noopener">Posetite zvanični Demo Group sajt <span>↗</span></a>
       </div>
       <div class="footer-column"><h2>DemoShop</h2><a href="index.html">Katalog proizvoda</a><a href="radovi.html">Naši radovi</a><a href="cart.html">Pošaljite upit</a></div>
       <div class="footer-column"><h2>Kontakt</h2><address>Janka Veselinovića 30<br>Šabac, Srbija</address><a href="tel:+38115300230">+381 15 300 230</a><a href="tel:+38166300230">+381 66 300 230</a></div>
-      <div class="footer-column"><h2>Pišite nam</h2><a href="mailto:demogroup2004@gmail.com">demogroup2004@gmail.com</a><p>Štampamo vreme, dan po dan.</p></div>
+      <div class="footer-column"><h2>Pišite nam</h2><a href="mailto:info@demogroup.rs">info@demogroup.rs</a><p>Štampamo vreme, dan po dan.</p></div>
     </div>
     <div class="container footer-bottom"><span>© 2026 Demo Group. Sva prava zadržana.</span><span>Cene su informativne, bez PDV-a i potvrđuju se kroz upit.</span></div>
   </footer>
-  <script src="cart-store.js?v=59"></script>
+  <script src="cart-store.js?v=71"></script>
   <script src="catalog-taxonomy.js?v=13"></script>
-  <script src="script.js?v=68"></script>
+  <script src="script.js?v=71"></script>
 </body>
 </html>

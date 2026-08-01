@@ -827,7 +827,7 @@ async function loadProduct() {
     elements.model.textContent = product.modelCode || requestedModel;
     if (editCartItem) {
       elements.quoteButton.textContent = "Sačuvaj izmenu";
-      elements.cartFeedback.textContent = "Izmenite boju ili veličinu. Postojeća stavka u upitu biće zamenjena.";
+      elements.cartFeedback.textContent = "Izmenite boju ili veličinu. Postojeća stavka u korpi biće zamenjena.";
     }
     renderColors(product.colors || []);
     elements.detail.classList.remove("hidden");
@@ -871,7 +871,7 @@ elements.quoteButton.addEventListener("click", () => {
     return;
   }
   window.DemoCart.add(cartItem);
-  elements.cartFeedback.innerHTML = `Dodato u upit: <strong>${quantity} kom.</strong> <a href="cart.html">Otvori upit →</a>`;
+  elements.cartFeedback.innerHTML = `Dodato u korpu: <strong>${quantity} kom.</strong> <a href="cart.html">Otvori korpu →</a>`;
 });
 
 loadProduct();
