@@ -7,6 +7,9 @@ const subtotalElement = document.getElementById("cartSubtotal");
 const vatElement = document.getElementById("cartVat");
 const totalElement = document.getElementById("cartTotal");
 const formMessage = document.getElementById("formMessage");
+const successElement = document.getElementById("quoteSuccess");
+const cartLayoutElement = document.querySelector(".cart-layout");
+const cartTitleElement = document.querySelector(".cart-title");
 const DRAFT_KEY = "demoshop_quote_customer_draft_v1";
 const draftFields = ["customerName", "customerCompany", "customerPib", "customerEmail", "customerPhone", "customerAddress", "customerNote"];
 
@@ -136,10 +139,11 @@ document.getElementById("sendQuote").addEventListener("click", async () => {
     if (!response.ok || !data.success) throw new Error(data.error || "Upit nije poslat.");
     window.DemoCart.write([]);
     localStorage.removeItem(DRAFT_KEY);
-    render();
-    formMessage.textContent = "Vaš upit je uspešno poslat.";
-    formMessage.classList.add("form-success");
-    sendButton.textContent = "Upit je poslat ✓";
+    cartTitleElement.classList.add("hidden");
+    cartLayoutElement.classList.add("hidden");
+    successElement.classList.remove("hidden");
+    successElement.focus({ preventScroll: true });
+    successElement.scrollIntoView({ behavior: "smooth", block: "center" });
   } catch (error) {
     formMessage.textContent = `Slanje nije uspelo: ${error.message}`;
     formMessage.classList.add("form-error");

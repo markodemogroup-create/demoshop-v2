@@ -6,7 +6,7 @@
   <meta name="description" content="Pošaljite upit za odabrane DemoShop proizvode.">
   <title>Korpa — DemoShop</title>
   <link rel="icon" type="image/png" href="assets/brand/favicon.png">
-  <link rel="stylesheet" href="style.css?v=73">
+  <link rel="stylesheet" href="style.css?v=75">
 </head>
 <body data-demoshop-build="66">
   <header class="site-header"><div class="header-inner">
@@ -22,6 +22,13 @@
 
   <main class="container cart-page">
     <div class="cart-title"><p class="eyebrow">UPIT ZA PONUDU</p><h1>Vaš izbor proizvoda</h1><p>Proverite varijante, pakovanja i količine pre slanja upita.</p></div>
+    <section id="quoteSuccess" class="quote-success-panel hidden" role="status" aria-live="polite" tabindex="-1">
+      <span class="quote-success-icon" aria-hidden="true">✓</span>
+      <p class="eyebrow">UPIT JE PRIMLJEN</p>
+      <h1>Vaš upit je uspešno poslat!</h1>
+      <p>Hvala vam na ukazanom poverenju. Vaš zahtev je evidentiran i kontaktiraćemo vas u najkraćem roku.</p>
+      <a class="quote-success-action" href="index.html">Nastavite kupovinu <span aria-hidden="true">→</span></a>
+    </section>
     <div class="cart-layout">
       <section>
         <div id="emptyCart" class="message hidden">Upit je prazan. <a href="index.html">Pronađite proizvode</a>.</div>
@@ -63,6 +70,6 @@
   </footer>
   <script src="cart-store.js?v=71"></script>
   <script src="header-search.js?v=68"></script>
-  <script src="cart.js?v=73"></script>
+  <script src="cart.js?v=75"></script>
 </body>
 </html>
