@@ -709,16 +709,31 @@ function applyCardDetail(card, detail, availability = null) {
   }
 
   card.querySelectorAll("[data-preview-src]").forEach(button => {
+    const swapPreviewImage = (src, previewing) => {
+      if (!src) return;
+      const token = String(Number(card.dataset.previewToken || 0) + 1);
+      card.dataset.previewToken = token;
+      const preload = new Image();
+      preload.onload = () => {
+        if (card.dataset.previewToken !== token) return;
+        media?.classList.toggle("previewing-variant", previewing);
+        media?.classList.add("variant-image-switching");
+        const finish = () => requestAnimationFrame(() => media?.classList.remove("variant-image-switching"));
+        image.addEventListener("load", finish, { once: true });
+        image.src = src;
+        if (image.complete) finish();
+      };
+      preload.src = src;
+    };
     const showPreview = () => {
       if (!button.dataset.previewSrc) return;
       if (!card.dataset.primaryImageSrc) card.dataset.primaryImageSrc = image.currentSrc || image.src;
-      media?.classList.add("previewing-variant");
-      image.src = button.dataset.previewSrc;
+      swapPreviewImage(button.dataset.previewSrc, true);
       card.querySelectorAll("[data-preview-src]").forEach(item => item.classList.toggle("active", item === button));
     };
     const restorePreview = () => {
-      media?.classList.remove("previewing-variant");
-      if (card.dataset.primaryImageSrc) image.src = card.dataset.primaryImageSrc;
+      if (card.dataset.primaryImageSrc) swapPreviewImage(card.dataset.primaryImageSrc, false);
+      card.querySelectorAll("[data-preview-src]").forEach((item, index) => item.classList.toggle("active", index === 0));
     };
     button.addEventListener("pointerenter", showPreview);
     button.addEventListener("focus", showPreview);

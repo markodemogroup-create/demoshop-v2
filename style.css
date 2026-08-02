@@ -533,3 +533,14 @@ main>.instagram-showcase{order:6}
   .filter-options.scrollable{max-height:440px}.size-filter-grid{max-height:440px;overflow-y:auto}
   .results-bar{top:0}
 }
+
+/* V91: mirniji uzorci boja i sigurne duge oznake veličina */
+.card-variant-previews button{border-color:#e2e9e7;background:#fff;box-shadow:0 2px 7px rgba(25,62,55,.04);transition:border-color .22s ease,background-color .22s ease,box-shadow .22s ease,transform .22s ease}
+.card-variant-previews button:hover,.card-variant-previews button:focus-visible{border-color:#8fd4cc;background:#f4fcfa;box-shadow:0 5px 14px rgba(24,142,132,.12);transform:translateY(-1px)}
+.card-variant-previews button.active{border-color:#239f95;background:#effbf9;box-shadow:0 0 0 2px rgba(35,159,149,.12);transform:none}
+.card-variant-previews img{transition:transform .24s ease,opacity .2s ease}.card-variant-previews button:hover img{transform:scale(1.035)}
+.card-media .card-image-primary{transition:opacity .22s ease,transform .32s ease}.card-media.variant-image-switching .card-image-primary{opacity:.35!important;transform:scale(.99)!important}
+.size-filter-option{min-width:0;overflow:hidden;padding:6px 4px}
+.size-filter-option span{display:block;width:100%;min-width:0;overflow:hidden;color:inherit;font-size:clamp(9px,1vw,12px);font-weight:750;line-height:1.12;text-align:center;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:420px){.size-filter-grid{grid-template-columns:repeat(3,minmax(68px,1fr))}.size-filter-option span{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.card-variant-previews button,.card-variant-previews img,.card-media .card-image-primary{transition:none!important}}
